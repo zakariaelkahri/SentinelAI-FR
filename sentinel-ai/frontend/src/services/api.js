@@ -107,6 +107,30 @@ export const api = {
     return response.data;
   },
 
+  adminListUsers: async () => {
+    const response = await apiClient.get('/users/admin/users');
+    return response.data;
+  },
+
+  adminUpdateUser: async (userId, payload) => {
+    const response = await apiClient.patch(`/users/admin/users/${userId}`, payload);
+    return response.data;
+  },
+
+  adminCreateCamera: async (payload) => {
+    const response = await apiClient.post('/api/v1/cameras', payload);
+    return response.data;
+  },
+
+  adminUpdateCamera: async (cameraId, payload) => {
+    const response = await apiClient.patch(`/api/v1/cameras/${cameraId}`, payload);
+    return response.data;
+  },
+
+  adminDeleteCamera: async (cameraId) => {
+    await apiClient.delete(`/api/v1/cameras/${cameraId}`);
+  },
+
   getCameraMjpegStreamUrl: (cameraId, stream = 'raw', cacheBuster = null) => {
     const queryParams = new URLSearchParams({ stream });
     const token = getAccessToken();

@@ -4,6 +4,7 @@ import Dashboard from './pages/Dashboard';
 import Predictions from './pages/Predictions';
 import LiveStreams from './pages/LiveStreams';
 import UsersManagement from './pages/UsersManagement';
+import ManageCameras from './pages/ManageCameras';
 import Params from './pages/Params';
 import Login from './pages/Login';
 import Navbar from './components/Navbar';
@@ -25,6 +26,7 @@ function App() {
                 <Route path="/predictions" element={<Predictions />} />
                 <Route path="/live-streams" element={<LiveStreams />} />
                 <Route path="/users-management" element={<UsersManagement />} />
+                <Route path="/manage-cameras" element={<ManageCameras />} />
                 <Route path="/params" element={<Params />} />
               </Route>
               <Route path="*" element={<Navigate to="/login" replace />} />

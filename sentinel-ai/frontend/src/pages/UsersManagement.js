@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
@@ -12,10 +12,45 @@ function UsersManagement() {
     role: 'operator',
     status: 'active',
   });
-  const [loading, setLoading] = useState(false);
+  const [isCreatingUser, setIsCreatingUser] = useState(false);
+  const [users, setUsers] = useState([]);
+  const [isLoadingUsers, setIsLoadingUsers] = useState(false);
+  const [editingUserId, setEditingUserId] = useState(null);
+  const [editData, setEditData] = useState({
+    username: '',
+    password: '',
+    role: 'operator',
+    status: 'active',
+  });
+  const [userActionState, setUserActionState] = useState({});
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [createdUsers, setCreatedUsers] = useState([]);
+
+  const loadUsers = useCallback(async () => {
+    if (!isAdmin) {
+      return;
+    }
+
+    setIsLoadingUsers(true);
+    setError('');
+
+    try {
+      const userList = await api.adminListUsers();
+      setUsers(Array.isArray(userList) ? userList : []);
+    } catch (requestError) {
+      const errorMessage =
+        requestError?.response?.data?.detail ||
+        requestError?.message ||
+        'Failed to load users.';
+      setError(errorMessage);
+    } finally {
+      setIsLoadingUsers(false);
+    }
+  }, [isAdmin]);
+
+  useEffect(() => {
+    loadUsers();
+  }, [loadUsers]);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -27,13 +62,23 @@ function UsersManagement() {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    setLoading(true);
+    setIsCreatingUser(true);
     setError('');
     setSuccess('');
 
     try {
       const createdUser = await api.adminCreateUser(formData);
-      setCreatedUsers((previous) => [createdUser, ...previous].slice(0, 8));
+      setUsers((previous) => {
+        const newUser = {
+          id: createdUser.id,
+          username: createdUser.username,
+          role: createdUser.role,
+          status: createdUser.status,
+          profile_id: createdUser.profile_id,
+        };
+        const filtered = previous.filter((item) => item.id !== createdUser.id);
+        return [newUser, ...filtered];
+      });
       setSuccess(`User "${createdUser.username}" created successfully.`);
       setFormData((previous) => ({
         ...previous,
@@ -47,7 +92,78 @@ function UsersManagement() {
         'Failed to create user.';
       setError(errorMessage);
     } finally {
-      setLoading(false);
+      setIsCreatingUser(false);
+    }
+  };
+
+  const startEditUser = (managedUser) => {
+    setError('');
+    setSuccess('');
+    setEditingUserId(managedUser.id);
+    setEditData({
+      username: managedUser.username || '',
+      password: '',
+      role: managedUser.role || 'operator',
+      status: managedUser.status || 'active',
+    });
+  };
+
+  const cancelEditUser = () => {
+    setEditingUserId(null);
+    setEditData({
+      username: '',
+      password: '',
+      role: 'operator',
+      status: 'active',
+    });
+  };
+
+  const handleEditChange = (event) => {
+    const { name, value } = event.target;
+    setEditData((previous) => ({
+      ...previous,
+      [name]: value,
+    }));
+  };
+
+  const handleUpdateUser = async (userId) => {
+    setUserActionState((previous) => ({
+      ...previous,
+      [userId]: 'updating',
+    }));
+    setError('');
+    setSuccess('');
+
+    const payload = {
+      username: editData.username.trim(),
+      role: editData.role,
+      status: editData.status,
+    };
+    const password = editData.password.trim();
+    if (password) {
+      payload.password = password;
+    }
+
+    try {
+      const updatedUser = await api.adminUpdateUser(userId, payload);
+      setUsers((previous) =>
+        previous.map((managedUser) =>
+          managedUser.id === userId ? updatedUser : managedUser
+        )
+      );
+      setSuccess(`User "${updatedUser.username}" updated successfully.`);
+      cancelEditUser();
+    } catch (requestError) {
+      const errorMessage =
+        requestError?.response?.data?.detail ||
+        requestError?.message ||
+        'Failed to update user.';
+      setError(errorMessage);
+    } finally {
+      setUserActionState((previous) => ({
+        ...previous,
+        [userId]: 'idle',
+      }));
     }
   };
 
@@ -59,7 +175,7 @@ function UsersManagement() {
         <div className="card">
           <h2>Access Restricted</h2>
           <p style={{ color: '#6b7280' }}>
-            Only administrators can create operator or supervisor accounts.
+            Only administrators can create or edit operator and supervisor accounts.
           </p>
         </div>
       )}
@@ -81,7 +197,7 @@ function UsersManagement() {
                   required
                   minLength={3}
                   maxLength={100}
-                  disabled={loading}
+                  disabled={isCreatingUser}
                 />
               </label>
 
@@ -96,7 +212,7 @@ function UsersManagement() {
                   onChange={handleChange}
                   required
                   minLength={6}
-                  disabled={loading}
+                  disabled={isCreatingUser}
                 />
               </label>
 
@@ -108,7 +224,7 @@ function UsersManagement() {
                   className="form-input"
                   value={formData.role}
                   onChange={handleChange}
-                  disabled={loading}
+                  disabled={isCreatingUser}
                 >
                   <option value="operator">Operator</option>
                   <option value="supervisor">Supervisor</option>
@@ -123,7 +239,7 @@ function UsersManagement() {
                   className="form-input"
                   value={formData.status}
                   onChange={handleChange}
-                  disabled={loading}
+                  disabled={isCreatingUser}
                 >
                   <option value="active">Active</option>
                   <option value="inactive">Inactive</option>
@@ -134,25 +250,123 @@ function UsersManagement() {
               {error && <div className="auth-error">{error}</div>}
               {success && <div className="auth-success">{success}</div>}
 
-              <button type="submit" className="btn" disabled={loading}>
-                {loading ? 'Creating...' : 'Create User'}
+              <button type="submit" className="btn" disabled={isCreatingUser}>
+                {isCreatingUser ? 'Creating...' : 'Create User'}
               </button>
             </form>
           </div>
 
           <div className="card">
-            <h2>Recent Created Accounts</h2>
-            {createdUsers.length === 0 ? (
-              <p style={{ color: '#6b7280' }}>
-                No new accounts created in this session.
-              </p>
-            ) : (
+            <h2>Managed Users</h2>
+            <div style={{ marginBottom: '0.75rem' }}>
+              <button type="button" className="btn" onClick={loadUsers} disabled={isLoadingUsers}>
+                {isLoadingUsers ? 'Refreshing...' : 'Refresh Users'}
+              </button>
+            </div>
+
+            {isLoadingUsers && <p style={{ color: '#6b7280' }}>Loading users...</p>}
+
+            {!isLoadingUsers && users.length === 0 && (
+              <p style={{ color: '#6b7280' }}>No operator or supervisor users found.</p>
+            )}
+
+            {!isLoadingUsers && users.length > 0 && (
               <ul className="users-list">
-                {createdUsers.map((createdUser) => (
-                  <li key={createdUser.id}>
-                    <span>{createdUser.username}</span>
-                    <span>{createdUser.role}</span>
-                    <span>{createdUser.status}</span>
+                {users.map((managedUser) => (
+                  <li key={managedUser.id}>
+                    {editingUserId === managedUser.id ? (
+                      <div className="user-edit-block">
+                        <label className="form-group" htmlFor={`edit-username-${managedUser.id}`}>
+                          <span>Username</span>
+                          <input
+                            id={`edit-username-${managedUser.id}`}
+                            name="username"
+                            type="text"
+                            className="form-input"
+                            value={editData.username}
+                            onChange={handleEditChange}
+                            minLength={3}
+                            maxLength={100}
+                            required
+                          />
+                        </label>
+
+                        <label className="form-group" htmlFor={`edit-password-${managedUser.id}`}>
+                          <span>New Password (Optional)</span>
+                          <input
+                            id={`edit-password-${managedUser.id}`}
+                            name="password"
+                            type="password"
+                            className="form-input"
+                            value={editData.password}
+                            onChange={handleEditChange}
+                            minLength={6}
+                            placeholder="Leave empty to keep current password"
+                          />
+                        </label>
+
+                        <label className="form-group" htmlFor={`edit-role-${managedUser.id}`}>
+                          <span>Role</span>
+                          <select
+                            id={`edit-role-${managedUser.id}`}
+                            name="role"
+                            className="form-input"
+                            value={editData.role}
+                            onChange={handleEditChange}
+                          >
+                            <option value="operator">Operator</option>
+                            <option value="supervisor">Supervisor</option>
+                          </select>
+                        </label>
+
+                        <label className="form-group" htmlFor={`edit-status-${managedUser.id}`}>
+                          <span>Status</span>
+                          <select
+                            id={`edit-status-${managedUser.id}`}
+                            name="status"
+                            className="form-input"
+                            value={editData.status}
+                            onChange={handleEditChange}
+                          >
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                            <option value="suspended">Suspended</option>
+                          </select>
+                        </label>
+
+                        <div className="user-item-actions">
+                          <button
+                            type="button"
+                            className="btn"
+                            onClick={() => handleUpdateUser(managedUser.id)}
+                            disabled={userActionState[managedUser.id] === 'updating'}
+                          >
+                            {userActionState[managedUser.id] === 'updating' ? 'Saving...' : 'Save'}
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn-secondary"
+                            onClick={cancelEditUser}
+                            disabled={userActionState[managedUser.id] === 'updating'}
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <span>{managedUser.username}</span>
+                        <span>{managedUser.role}</span>
+                        <span>{managedUser.status}</span>
+                        <button
+                          type="button"
+                          className="btn"
+                          onClick={() => startEditUser(managedUser)}
+                        >
+                          Edit
+                        </button>
+                      </>
+                    )}
                   </li>
                 ))}
               </ul>

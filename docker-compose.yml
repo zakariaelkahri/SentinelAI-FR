@@ -11,7 +11,7 @@ services:
       - backend
     networks:
       - sentinelai-network
-    command: npm start
+    # command: npm start
     restart: unless-stopped
 
   # RTSP Server
@@ -148,16 +148,16 @@ services:
     restart: unless-stopped
 
   # Redis Cache
-  # redis:
-  #   image: redis:7-alpine
-  #   container_name: sentinel-redis
-  #   ports:
-  #     - "6379:6379"
-  #   volumes:
-  #     - redis_data:/data
-  #   networks:
-  #     - sentinelai-network
-  #   restart: unless-stopped
+  redis:
+    image: redis:7-alpine
+    container_name: sentinel-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - sentinelai-network
+    restart: unless-stopped
 
   # PgAdmin for Database Management
   pgadmin:

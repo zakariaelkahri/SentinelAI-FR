@@ -65,7 +65,7 @@ class CameraSeeder(BaseSeeder):
             ),
             Camera(
                 name="Hallway Camera - Floor 1",
-                rtsp_url="rtsp://camera4.example.com:554/stream1",
+                rtsp_url="rtsp://localhost:8554/live.stream",
                 location="Building A - Floor 1 Hallway",
                 status=CameraStatus.ONLINE,
                 operator_id=operators[1].id if len(operators) > 1 else operator_id,

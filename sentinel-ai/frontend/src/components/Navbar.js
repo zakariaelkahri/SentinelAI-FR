@@ -51,14 +51,25 @@ function Navbar() {
       <div className="sidebar-section">
         <p className="sidebar-section-title">Administration</p>
         {isAdmin ? (
-          <NavLink
-            className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}
-            to="/users-management"
-          >
-            Users Management
-          </NavLink>
+          <>
+            <NavLink
+              className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}
+              to="/users-management"
+            >
+              Users Management
+            </NavLink>
+            <NavLink
+              className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}
+              to="/manage-cameras"
+            >
+              Manage Cameras
+            </NavLink>
+          </>
         ) : (
-          <div className="sidebar-link disabled">Users Management</div>
+          <>
+            <div className="sidebar-link disabled">Users Management</div>
+            <div className="sidebar-link disabled">Manage Cameras</div>
+          </>
         )}
         <NavLink
           className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}

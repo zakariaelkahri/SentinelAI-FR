@@ -171,6 +171,22 @@ body {
   opacity: 0.7;
 }
 
+.btn-secondary {
+  background-color: #374151;
+}
+
+.btn-secondary:hover {
+  background-color: #4b5563;
+}
+
+.btn-danger {
+  background-color: #b91c1c;
+}
+
+.btn-danger:hover {
+  background-color: #991b1b;
+}
+
 .btn-nav {
   background-color: transparent;
   border: 1px solid rgba(255, 255, 255, 0.3);
@@ -327,6 +343,7 @@ body {
 }
 
 .users-list,
+.cameras-list,
 .params-list {
   list-style: none;
   display: flex;
@@ -335,6 +352,7 @@ body {
 }
 
 .users-list li,
+.cameras-list li,
 .params-list li {
   display: flex;
   justify-content: space-between;
@@ -344,6 +362,42 @@ body {
   border-radius: 8px;
   padding: 0.65rem 0.8rem;
   font-size: 0.92rem;
+}
+
+.cameras-list li {
+  display: block;
+  line-height: 1.5;
+}
+
+.cameras-list li p span {
+  font-weight: 600;
+}
+
+.camera-edit-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.camera-item-actions {
+  margin-top: 0.75rem;
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.user-edit-block {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.user-item-actions {
+  margin-top: 0.75rem;
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .params-list code {
