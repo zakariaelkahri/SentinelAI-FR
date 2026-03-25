@@ -1,0 +1,186 @@
+services:
+  # Frontend Service
+  frontend:
+    build:
+      context: ./sentinel-ai/frontend
+      dockerfile: Dockerfile
+    container_name: sentinel-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - sentinelai-network
+    command: npm start
+    restart: unless-stopped
+
+  # RTSP Server
+  mediamtx:
+    image: bluenviron/mediamtx:latest
+    container_name: sentinel-mediamtx
+    ports:
+      - "8554:8554" # RTSP
+      - "8888:8888" # HLS
+      - "8889:8889" # WebRTC
+    networks:
+      - sentinelai-network
+    restart: unless-stopped
+
+  # Sample RTSP feeder (loops a local video into live.stream)
+  rtsp-feeder:
+    image: jrottenberg/ffmpeg:6.1-alpine
+    container_name: sentinel-rtsp-feeder
+    entrypoint: ["ffmpeg"]
+    command:
+      - "-re"
+      - "-stream_loop"
+      - "-1"
+      - "-i"
+      - "/workspace/images/teting/gfviolence.mp4"
+      - "-rtsp_transport"
+      - "tcp"
+      - "-c:v"
+      - "mpeg4"
+      - "-q:v"
+      - "3"
+      - "-r"
+      - "15"
+      - "-f"
+      - "rtsp"
+      - "rtsp://mediamtx:8554/live.stream"
+    volumes:
+      - ./model_training/images:/workspace/images:ro
+    depends_on:
+      - mediamtx
+    networks:
+      - sentinelai-network
+    restart: unless-stopped
+
+  # YOLO RTSP processor (reads live.stream, publishes yolo.stream)
+  yolo-rtsp:
+    build: ./model_training
+    image: sentinelai-fr
+    container_name: sentinel-yolo-rtsp
+    command: ["python", "/workspace/scripts/rtsp_yolo_stream.py"]
+    volumes:
+      - ./model_training/runs:/workspace/runs
+    environment:
+      - MODEL_PATH=/workspace/runs/detect/runs/1yolov8m_realy_violence2_test_v3/weights/best.pt
+      - INPUT_RTSP_URL=rtsp://mediamtx:8554/live.stream
+      - OUTPUT_RTSP_URL=rtsp://mediamtx:8554/yolo.stream
+      - RTSP_TRANSPORT=tcp
+      - FRAME_WIDTH=640
+      - FRAME_HEIGHT=640
+      - FPS=12
+      - OUTPUT_ENCODER=auto
+      - PROCESS_EVERY_NTH_FRAME=2
+      - MAX_READ_FAILURES=40
+      - RECONNECT_DELAY_SECONDS=2
+    depends_on:
+      - mediamtx
+      - rtsp-feeder
+    networks:
+      - sentinelai-network
+    restart: unless-stopped
+
+  # Model Training Service with GPU support
+  jupyter:
+    build: ./model_training
+    image: sentinelai-fr
+    container_name: sentinel-jupyter
+    ports:
+      - "8890:8888"
+    volumes:
+      - ./model_training/images:/workspace/images
+      - ./model_training/runs:/workspace/runs
+      - ./model_training/notebooks:/workspace/notebooks
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    networks:
+      - sentinelai-network
+    restart: unless-stopped
+
+  # Backend API Service
+  backend:
+    build: ./sentinel-ai/backend
+    container_name: sentinel-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./sentinel-ai/backend:/app
+    env_file:
+      - ./sentinel-ai/.env
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/sentinel
+      - REDIS_URL=redis://redis:6379/0
+      - RTSP_HOST_ALIAS=mediamtx
+      - MJPEG_FPS=10
+      - MJPEG_JPEG_QUALITY=80
+      - MJPEG_MAX_READ_FAILURES=40
+      - MJPEG_RECONNECT_DELAY_SECONDS=0.25
+    depends_on:
+      - db
+      - redis
+      - mediamtx
+    networks:
+      - sentinelai-network
+    restart: unless-stopped
+
+  # PostgreSQL Database
+  db:
+    image: postgres:15-alpine
+    container_name: sentinel-db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=sentinel
+    ports:
+      - "5432:5432"
+    networks:
+      - sentinelai-network
+    restart: unless-stopped
+
+  # Redis Cache
+  # redis:
+  #   image: redis:7-alpine
+  #   container_name: sentinel-redis
+  #   ports:
+  #     - "6379:6379"
+  #   volumes:
+  #     - redis_data:/data
+  #   networks:
+  #     - sentinelai-network
+  #   restart: unless-stopped
+
+  # PgAdmin for Database Management
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: sentinel-pgadmin
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@sentinel.com
+      - PGADMIN_DEFAULT_PASSWORD=admin
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      - db
+    networks:
+      - sentinelai-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+  pgadmin_data:
+
+networks:
+  sentinelai-network:
+    driver: bridge

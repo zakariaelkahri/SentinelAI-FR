@@ -1,0 +1,25 @@
+# Large dataset directories — mount these as volumes instead
+images/
+runs/
+
+# Python virtual environment
+yolo_env/
+
+# Jupyter checkpoints & cache
+**/.ipynb_checkpoints/
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+
+# Git
+.git/
+.gitignore
+
+# OS artifacts
+.DS_Store
+Thumbs.db
+
+# Misc
+*.egg-info/
+dist/
+build/

@@ -1,0 +1,54 @@
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.egg-info/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Build artifacts
+build/
+dist/
+*.egg
+.eggs/
+
+# Logs
+*.log
+logs/
+airflow/logs/*
+!airflow/logs/.gitkeep
+
+# Data
+*.db
+*.sqlite3
+data/
+
+# Docker
+docker-compose.override.yml
+
+# Testing
+.coverage
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Secrets
+*.pem
+*.key
+credentials.json

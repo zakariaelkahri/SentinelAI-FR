@@ -1,0 +1,129 @@
+x-airflow-common:
+  &airflow-common
+  build:
+    context: .
+    dockerfile: Dockerfile
+  environment:
+    &airflow-common-env
+    AIRFLOW__CORE__EXECUTOR: CeleryExecutor
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://postgres:postgres@db:5432/airflow
+    AIRFLOW__CELERY__BROKER_URL: redis://redis:6379/1
+    AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://postgres:postgres@db:5432/airflow
+    AIRFLOW__CORE__FERNET_KEY: '81HqDtbqAywKSOumSha3BhWNOdQ26slT6K0YaZeZyPs='
+    AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+    AIRFLOW__WEBSERVER__SECRET_KEY: sentinelai-secret-key
+  volumes:
+    - ./dags:/opt/airflow/dags
+    - ./logs:/opt/airflow/logs
+    - ./plugins:/opt/airflow/plugins
+  depends_on:
+    db:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+  networks:
+    - sentinelai-network
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: airflow-db
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=airflow
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - sentinelai-network
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: airflow-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - sentinelai-network
+    restart: unless-stopped
+
+  airflow-init:
+    <<: *airflow-common
+    container_name: airflow-init
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - |
+        airflow db init
+        airflow users create \
+          --username admin \
+          --password admin \
+          --firstname Admin \
+          --lastname User \
+          --role Admin \
+          --email admin@sentinelai.local || true
+
+  airflow-webserver:
+    <<: *airflow-common
+    container_name: airflow-webserver
+    command: webserver
+    ports:
+      - "8080:8080"
+    environment:
+      <<: *airflow-common-env
+      _AIRFLOW_WWW_USER_CREATE: 'true'
+      _AIRFLOW_WWW_USER_USERNAME: admin
+      _AIRFLOW_WWW_USER_PASSWORD: admin
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  airflow-scheduler:
+    <<: *airflow-common
+    container_name: airflow-scheduler
+    command: scheduler
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  airflow-worker:
+    <<: *airflow-common
+    container_name: airflow-worker
+    command: celery worker
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+
+networks:
+  sentinelai-network:
+    driver: bridge
