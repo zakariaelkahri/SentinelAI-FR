@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { BrowserRouter as Router, Navigate, Routes, Route } from 'react-router-dom';
 import Dashboard from './pages/Dashboard';
 import Predictions from './pages/Predictions';
@@ -12,17 +12,30 @@ import ProtectedRoute from './components/ProtectedRoute';
 import { AuthProvider } from './context/AuthContext';
 
 function App() {
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
+  const toggleSidebar = () => {
+    setIsSidebarOpen((previous) => !previous);
+  };
+
   return (
     <AuthProvider>
       <Router>
-        <div className="app">
-          <Navbar />
+        <div className={`app${isSidebarOpen ? '' : ' sidebar-hidden'}`}>
+          <Navbar isSidebarOpen={isSidebarOpen} onToggleSidebar={toggleSidebar} />
           <main className="main-content">
             <Routes>
               <Route path="/" element={<Navigate to="/login" replace />} />
               <Route path="/login" element={<Login />} />
+              <Route
+                path="/dashboard"
+                element={
+                  <ProtectedRoute allowedRoles={['admin']} redirectTo="/live-streams">
+                    <Dashboard />
+                  </ProtectedRoute>
+                }
+              />
               <Route element={<ProtectedRoute />}>
-                <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/predictions" element={<Predictions />} />
                 <Route path="/live-streams" element={<LiveStreams />} />
                 <Route path="/users-management" element={<UsersManagement />} />

@@ -2,7 +2,7 @@ import React from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
-function Navbar() {
+function Navbar({ isSidebarOpen, onToggleSidebar }) {
   const { user, isAuthenticated, isInitializing, logout } = useAuth();
 
   const handleLogout = async () => {
@@ -14,26 +14,52 @@ function Navbar() {
   }
 
   const isAdmin = user?.role_name === 'admin';
+  const brandHomePath = isAdmin ? '/dashboard' : '/live-streams';
+
+  if (!isSidebarOpen) {
+    return (
+      <button
+        type="button"
+        className="sidebar-toggle-floating"
+        onClick={onToggleSidebar}
+      >
+        Menu
+      </button>
+    );
+  }
 
   return (
     <aside className="sidebar">
       <div className="sidebar-header">
-        <h1>
-          <Link className="sidebar-brand" to="/dashboard">
-            SentinelAI
-          </Link>
-        </h1>
-        <p className="sidebar-subtitle">Security Operations</p>
+        <div>
+          <h1>
+            <Link className="sidebar-brand" to={brandHomePath}>
+              SentinelAI
+            </Link>
+          </h1>
+          <p className="sidebar-subtitle">Security Operations</p>
+        </div>
+        <button
+          type="button"
+          className="sidebar-toggle-btn"
+          onClick={onToggleSidebar}
+        >
+          Hide
+        </button>
       </div>
 
       <div className="sidebar-section">
         <p className="sidebar-section-title">Monitoring</p>
-        <NavLink
-          className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}
-          to="/dashboard"
-        >
-          Dashboard Statistics
-        </NavLink>
+        {isAdmin ? (
+          <NavLink
+            className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}
+            to="/dashboard"
+          >
+            Dashboard Statistics
+          </NavLink>
+        ) : (
+          <div className="sidebar-link disabled">Dashboard Statistics</div>
+        )}
         <NavLink
           className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}
           to="/live-streams"

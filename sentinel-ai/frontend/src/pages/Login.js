@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
@@ -6,11 +6,6 @@ function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-
-  const fromPath = useMemo(
-    () => location.state?.from?.pathname || '/dashboard',
-    [location.state]
-  );
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -29,8 +24,16 @@ function Login() {
     setError('');
 
     try {
-      await login(username, password);
-      navigate(fromPath, { replace: true });
+      const signedInUser = await login(username, password);
+      const requestedPath = location.state?.from?.pathname;
+      const defaultPath =
+        signedInUser?.role_name === 'admin' ? '/dashboard' : '/live-streams';
+      const nextPath =
+        requestedPath === '/dashboard' && signedInUser?.role_name !== 'admin'
+          ? '/live-streams'
+          : requestedPath || defaultPath;
+
+      navigate(nextPath, { replace: true });
     } catch (requestError) {
       const errorMessage =
         requestError?.response?.data?.detail ||

@@ -152,7 +152,11 @@ def _camera_to_response(camera: Camera, request: Request) -> CameraResponse:
     )
 
 
-@router.get("/models", response_model=list[ModelInfo])
+@router.get(
+    "/models",
+    response_model=list[ModelInfo],
+    dependencies=[Depends(require_role("admin"))],
+)
 async def list_models(current_user: User = Depends(get_current_active_user)):
     """
     Simple model list used by dashboard.
