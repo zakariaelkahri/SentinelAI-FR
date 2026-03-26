@@ -102,6 +102,11 @@ export const api = {
     return response.data;
   },
 
+  getCameraThreatAlert: async (cameraId) => {
+    const response = await apiClient.get(`/api/v1/cameras/${cameraId}/threat-alert`);
+    return response.data;
+  },
+
   adminCreateUser: async (payload) => {
     const response = await apiClient.post('/users/admin/create-user', payload);
     return response.data;
@@ -144,32 +149,6 @@ export const api = {
     }
 
     return `${API_BASE_URL}/api/v1/cameras/${cameraId}/mjpeg?${queryParams.toString()}`;
-  },
-
-  predict: async (file) => {
-    const formData = new FormData();
-    formData.append('file', file);
-
-    const response = await apiClient.post('/api/v1/predict', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-    return response.data;
-  },
-
-  predictBatch: async (files) => {
-    const formData = new FormData();
-    files.forEach((file) => {
-      formData.append('files', file);
-    });
-
-    const response = await apiClient.post('/api/v1/predict/batch', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-    return response.data;
   },
 
   askSecurityAssistant: async (question) => {

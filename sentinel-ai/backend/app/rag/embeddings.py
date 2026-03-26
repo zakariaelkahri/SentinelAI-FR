@@ -1,23 +1,24 @@
-from app.rag.chunking import hybrid_chunk
-from app.rag.loader import docs
 from langchain_core.documents import Document
 from langchain_huggingface import HuggingFaceEmbeddings
+
 from app.core.config import settings
+from app.rag.chunking import hybrid_chunk
+from app.rag.loader import docs
 
-documents: list[Document] = []
 
-for source_doc in docs:
-    chunks = hybrid_chunk(source_doc.page_content)
-    for chunk in chunks:
-        metadata = dict(source_doc.metadata)
-        metadata.update(chunk.get("metadata", {}))
-        documents.append(
-            Document(page_content=chunk["content"], metadata=metadata)
-        )
+def build_documents() -> list[Document]:
+    built_docs: list[Document] = []
 
-if not documents:
-    raise ValueError("No documents were generated from the configured RAG source file.")
+    for source_doc in docs:
+        for chunk in hybrid_chunk(source_doc.page_content):
+            metadata = {**source_doc.metadata, **chunk.get("metadata", {})}
+            built_docs.append(Document(page_content=chunk["content"], metadata=metadata))
 
-embeddings = HuggingFaceEmbeddings(
-    model_name=settings.EMBEDDING_MODEL
-)
+    if not built_docs:
+        raise ValueError("No documents were generated from the configured RAG source file.")
+
+    return built_docs
+
+
+documents = build_documents()
+embeddings = HuggingFaceEmbeddings(model_name=settings.EMBEDDING_MODEL)

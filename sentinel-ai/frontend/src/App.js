@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { BrowserRouter as Router, Navigate, Routes, Route } from 'react-router-dom';
 import Dashboard from './pages/Dashboard';
-import Predictions from './pages/Predictions';
 import LiveStreams from './pages/LiveStreams';
 import UsersManagement from './pages/UsersManagement';
 import ManageCameras from './pages/ManageCameras';
 import Params from './pages/Params';
+import SecurityAssistant from './pages/SecurityAssistant';
 import Login from './pages/Login';
 import Navbar from './components/Navbar';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -30,16 +30,37 @@ function App() {
               <Route
                 path="/dashboard"
                 element={
-                  <ProtectedRoute allowedRoles={['admin']} redirectTo="/live-streams">
+                  <ProtectedRoute allowedRoles={['admin', 'supervisor']} redirectTo="/live-streams">
                     <Dashboard />
                   </ProtectedRoute>
                 }
               />
+              <Route
+                path="/assistant"
+                element={
+                  <ProtectedRoute allowedRoles={['operator', 'supervisor']} redirectTo="/live-streams">
+                    <SecurityAssistant />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/users-management"
+                element={
+                  <ProtectedRoute allowedRoles={['admin']} redirectTo="/live-streams">
+                    <UsersManagement />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/manage-cameras"
+                element={
+                  <ProtectedRoute allowedRoles={['admin', 'supervisor']} redirectTo="/live-streams">
+                    <ManageCameras />
+                  </ProtectedRoute>
+                }
+              />
               <Route element={<ProtectedRoute />}>
-                <Route path="/predictions" element={<Predictions />} />
                 <Route path="/live-streams" element={<LiveStreams />} />
-                <Route path="/users-management" element={<UsersManagement />} />
-                <Route path="/manage-cameras" element={<ManageCameras />} />
                 <Route path="/params" element={<Params />} />
               </Route>
               <Route path="*" element={<Navigate to="/login" replace />} />

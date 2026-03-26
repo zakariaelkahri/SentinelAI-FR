@@ -14,7 +14,12 @@ function Navbar({ isSidebarOpen, onToggleSidebar }) {
   }
 
   const isAdmin = user?.role_name === 'admin';
-  const brandHomePath = isAdmin ? '/dashboard' : '/live-streams';
+  const isSupervisor = user?.role_name === 'supervisor';
+  const isOperator = user?.role_name === 'operator';
+  const canViewDashboard = isAdmin || isSupervisor;
+  const canUseAssistant = isOperator || isSupervisor;
+  const canManageCameras = isAdmin || isSupervisor;
+  const brandHomePath = canViewDashboard ? '/dashboard' : '/live-streams';
 
   if (!isSidebarOpen) {
     return (
@@ -50,7 +55,7 @@ function Navbar({ isSidebarOpen, onToggleSidebar }) {
 
       <div className="sidebar-section">
         <p className="sidebar-section-title">Monitoring</p>
-        {isAdmin ? (
+        {canViewDashboard ? (
           <NavLink
             className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}
             to="/dashboard"
@@ -66,12 +71,16 @@ function Navbar({ isSidebarOpen, onToggleSidebar }) {
         >
           Live Streams
         </NavLink>
-        <NavLink
-          className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}
-          to="/predictions"
-        >
-          Predictions
-        </NavLink>
+        {canUseAssistant ? (
+          <NavLink
+            className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}
+            to="/assistant"
+          >
+            Security Assistant
+          </NavLink>
+        ) : (
+          <div className="sidebar-link disabled">Security Assistant</div>
+        )}
       </div>
 
       <div className="sidebar-section">
@@ -84,6 +93,13 @@ function Navbar({ isSidebarOpen, onToggleSidebar }) {
             >
               Users Management
             </NavLink>
+          </>
+        ) : (
+          <div className="sidebar-link disabled">Users Management</div>
+        )}
+
+        {canManageCameras ? (
+          <>
             <NavLink
               className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}
               to="/manage-cameras"
@@ -92,10 +108,7 @@ function Navbar({ isSidebarOpen, onToggleSidebar }) {
             </NavLink>
           </>
         ) : (
-          <>
-            <div className="sidebar-link disabled">Users Management</div>
-            <div className="sidebar-link disabled">Manage Cameras</div>
-          </>
+          <div className="sidebar-link disabled">Manage Cameras</div>
         )}
         <NavLink
           className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}

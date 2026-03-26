@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../services/api';
 
+const THREAT_POLL_INTERVAL_MS = 5000;
+
 function LiveStreams() {
   const [cameras, setCameras] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -8,6 +10,7 @@ function LiveStreams() {
   const [streamNonces, setStreamNonces] = useState({});
   const [streamStatuses, setStreamStatuses] = useState({});
   const [streamErrors, setStreamErrors] = useState({});
+  const [threatAlerts, setThreatAlerts] = useState({});
   const reconnectTimeoutsRef = useRef({});
 
   useEffect(() => {
@@ -82,6 +85,48 @@ function LiveStreams() {
     };
   }, []);
 
+  useEffect(() => {
+    if (activeCameras.length === 0) {
+      setThreatAlerts({});
+      return;
+    }
+
+    let isMounted = true;
+
+    const refreshThreatAlerts = async () => {
+      const alertEntries = await Promise.all(
+        activeCameras.map(async (camera) => {
+          try {
+            const threatAlert = await api.getCameraThreatAlert(camera.id);
+            return [camera.id, threatAlert];
+          } catch (requestError) {
+            return [
+              camera.id,
+              {
+                camera_id: camera.id,
+                detected: false,
+              },
+            ];
+          }
+        })
+      );
+
+      if (!isMounted) {
+        return;
+      }
+
+      setThreatAlerts(Object.fromEntries(alertEntries));
+    };
+
+    refreshThreatAlerts();
+    const intervalId = setInterval(refreshThreatAlerts, THREAT_POLL_INTERVAL_MS);
+
+    return () => {
+      isMounted = false;
+      clearInterval(intervalId);
+    };
+  }, [activeCameras]);
+
   const requestReconnect = (cameraId, delayMs = 1500) => {
     if (reconnectTimeoutsRef.current[cameraId]) {
       clearTimeout(reconnectTimeoutsRef.current[cameraId]);
@@ -144,6 +189,13 @@ function LiveStreams() {
           {activeCameras.map((camera) => {
             const streamStatus = streamStatuses[camera.id] || 'connecting';
             const streamError = streamErrors[camera.id] || '';
+            const threatAlert = threatAlerts[camera.id];
+            const hasThreatAlert = Boolean(threatAlert?.detected);
+            const threatLabel = threatAlert?.label || 'unknown';
+            const threatConfidence = Number(threatAlert?.confidence_score || 0);
+            const threatTimestamp = threatAlert?.timestamp
+              ? new Date(threatAlert.timestamp).toLocaleTimeString()
+              : null;
             const yoloStreamUrl = api.getCameraMjpegStreamUrl(
               camera.id,
               'yolo',
@@ -151,7 +203,10 @@ function LiveStreams() {
             );
 
             return (
-              <section className="card stream-panel" key={camera.id}>
+              <section
+                className={`card stream-panel${hasThreatAlert ? ' stream-panel-alert' : ''}`}
+                key={camera.id}
+              >
                 <h2>{camera.name}</h2>
                 <div className="camera-meta stream-meta">
                   <span>
@@ -183,6 +238,17 @@ function LiveStreams() {
                     Reconnect
                   </button>
                 </div>
+                {hasThreatAlert && (
+                  <div className="stream-threat-alert" role="alert">
+                    <p className="stream-threat-title">
+                      Threat Detected: {String(threatLabel).toUpperCase()}
+                    </p>
+                    <p className="stream-threat-details">
+                      Confidence: {(threatConfidence * 100).toFixed(1)}%
+                      {threatTimestamp ? ` | Time: ${threatTimestamp}` : ''}
+                    </p>
+                  </div>
+                )}
                 {streamError && <div className="auth-error">{streamError}</div>}
                 <img
                   key={`${camera.id}-${streamNonces[camera.id] || 'init'}`}

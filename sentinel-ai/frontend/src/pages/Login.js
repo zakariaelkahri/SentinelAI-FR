@@ -26,10 +26,11 @@ function Login() {
     try {
       const signedInUser = await login(username, password);
       const requestedPath = location.state?.from?.pathname;
-      const defaultPath =
-        signedInUser?.role_name === 'admin' ? '/dashboard' : '/live-streams';
+      const canOpenDashboard =
+        signedInUser?.role_name === 'admin' || signedInUser?.role_name === 'supervisor';
+      const defaultPath = canOpenDashboard ? '/dashboard' : '/live-streams';
       const nextPath =
-        requestedPath === '/dashboard' && signedInUser?.role_name !== 'admin'
+        requestedPath === '/dashboard' && !canOpenDashboard
           ? '/live-streams'
           : requestedPath || defaultPath;
 

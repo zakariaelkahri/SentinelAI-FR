@@ -6,7 +6,7 @@ from langchain_text_splitters import (
 from app.core.config import settings
 
 
-def hybrid_chunk(text: str):
+def hybrid_chunk(text: str) -> list[dict]:
     md_splitter = MarkdownHeaderTextSplitter([
         ("#", "Chapter"),
         ("##", "Section"),
@@ -22,14 +22,11 @@ def hybrid_chunk(text: str):
     )
 
     final_chunks = []
-
     for doc in structured_docs:
         sub_chunks = recursive_splitter.split_text(doc.page_content)
-
-        for chunk in sub_chunks:
-            final_chunks.append({
-                "content": chunk,
-                "metadata": doc.metadata
-            })
+        final_chunks.extend(
+            {"content": chunk, "metadata": doc.metadata}
+            for chunk in sub_chunks
+        )
 
     return final_chunks

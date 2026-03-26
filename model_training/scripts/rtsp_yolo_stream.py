@@ -3,6 +3,7 @@ import subprocess
 import time
 
 import cv2
+import requests
 from ultralytics import YOLO
 
 
@@ -20,6 +21,18 @@ OUTPUT_ENCODER = os.getenv("OUTPUT_ENCODER", "auto")
 PROCESS_EVERY_NTH_FRAME = max(1, int(os.getenv("PROCESS_EVERY_NTH_FRAME", "2")))
 MAX_READ_FAILURES = max(1, int(os.getenv("MAX_READ_FAILURES", "30")))
 RECONNECT_DELAY_SECONDS = max(1, int(os.getenv("RECONNECT_DELAY_SECONDS", "2")))
+BACKEND_ALERTS_URL = os.getenv(
+    "BACKEND_ALERTS_URL",
+    "http://backend:8000/api/v1/alerts/ingest",
+)
+THREAT_CLASSES = {
+    item.strip().lower()
+    for item in os.getenv("THREAT_CLASSES", "knife,violence,weapon").split(",")
+    if item.strip()
+}
+ALERT_MIN_CONFIDENCE = float(os.getenv("ALERT_MIN_CONFIDENCE", "0.35"))
+ALERT_COOLDOWN_SECONDS = max(1, int(os.getenv("ALERT_COOLDOWN_SECONDS", "8")))
+ALERT_HTTP_TIMEOUT_SECONDS = max(1, int(os.getenv("ALERT_HTTP_TIMEOUT_SECONDS", "3")))
 
 
 def get_available_encoders() -> set[str]:
@@ -140,27 +153,95 @@ def open_input_capture() -> cv2.VideoCapture:
     return capture
 
 
+def _extract_threat_detections(result) -> dict[str, float]:
+    if result.boxes is None or result.boxes.cls is None or result.boxes.conf is None:
+        return {}
+
+    class_ids = result.boxes.cls.tolist()
+    confidences = result.boxes.conf.tolist()
+    class_names = result.names
+    detections: dict[str, float] = {}
+
+    for class_id, confidence in zip(class_ids, confidences):
+        label = ""
+        index = int(class_id)
+
+        if isinstance(class_names, dict):
+            label = str(class_names.get(index, "")).strip().lower()
+        elif isinstance(class_names, list) and 0 <= index < len(class_names):
+            label = str(class_names[index]).strip().lower()
+
+        if not label:
+            continue
+        if label not in THREAT_CLASSES:
+            continue
+        if confidence < ALERT_MIN_CONFIDENCE:
+            continue
+
+        previous_confidence = detections.get(label, 0.0)
+        detections[label] = max(previous_confidence, float(confidence))
+
+    return detections
+
+
+def _post_alert(
+    session: requests.Session,
+    source_rtsp_url: str,
+    alert_type: str,
+    confidence: float,
+) -> bool:
+    payload = {
+        "source_rtsp_url": source_rtsp_url,
+        "alert_type": alert_type,
+        "confidence_score": confidence,
+        "snapshot_path": "N/A",
+        "team_bio": "yolo-rtsp",
+    }
+
+    try:
+        response = session.post(
+            BACKEND_ALERTS_URL,
+            json=payload,
+            timeout=ALERT_HTTP_TIMEOUT_SECONDS,
+        )
+        if response.status_code >= 400:
+            print(
+                f"Alert ingest failed ({response.status_code}): {response.text}",
+                flush=True,
+            )
+            return False
+
+        return True
+    except Exception as post_error:
+        print(f"Alert ingest error: {post_error}", flush=True)
+        return False
+
+
 def run_pipeline() -> None:
-    print(f"Loading YOLO model from: {MODEL_PATH}")
+    print(f"Loading YOLO model from: {MODEL_PATH}", flush=True)
     model = YOLO(MODEL_PATH)
     encoder = resolve_encoder()
-    print(f"Using output encoder: {encoder}")
-    print("Model loaded. Starting RTSP pipeline...")
+    print(f"Using output encoder: {encoder}", flush=True)
+    print("Model loaded. Starting RTSP pipeline...", flush=True)
+    print(f"Threat labels monitored: {', '.join(sorted(THREAT_CLASSES))}", flush=True)
 
     frame_interval = 1.0 / max(1, FPS)
+    last_alert_times: dict[str, float] = {}
+    http_session = requests.Session()
 
     while True:
         capture = open_input_capture()
         if not capture.isOpened():
             print(
                 f"Could not open input stream: {INPUT_RTSP_URL}. "
-                f"Retrying in {RECONNECT_DELAY_SECONDS}s..."
+                f"Retrying in {RECONNECT_DELAY_SECONDS}s...",
+                flush=True,
             )
             time.sleep(RECONNECT_DELAY_SECONDS)
             continue
 
         ffmpeg_proc = start_ffmpeg_process(encoder)
-        print(f"Streaming YOLO output to: {OUTPUT_RTSP_URL}")
+        print(f"Streaming YOLO output to: {OUTPUT_RTSP_URL}", flush=True)
         read_failures = 0
         frame_index = 0
         last_annotated = None
@@ -169,14 +250,14 @@ def run_pipeline() -> None:
         try:
             while True:
                 if ffmpeg_proc.poll() is not None:
-                    print("FFmpeg process exited. Restarting pipeline...")
+                    print("FFmpeg process exited. Restarting pipeline...", flush=True)
                     break
 
                 ok, frame = capture.read()
                 if not ok:
                     read_failures += 1
                     if read_failures >= MAX_READ_FAILURES:
-                        print("Input stream disconnected for too long. Reconnecting...")
+                        print("Input stream disconnected for too long. Reconnecting...", flush=True)
                         break
                     time.sleep(0.03)
                     continue
@@ -194,18 +275,30 @@ def run_pipeline() -> None:
                 if should_run_inference:
                     try:
                         results = model(frame, verbose=False)
-                        last_annotated = results[0].plot()
+                        result = results[0]
+                        last_annotated = result.plot()
+                        now = time.time()
+
+                        detections = _extract_threat_detections(result)
+                        for alert_type, confidence in detections.items():
+                            last_sent_at = last_alert_times.get(alert_type, 0.0)
+                            if now - last_sent_at < ALERT_COOLDOWN_SECONDS:
+                                continue
+
+                            sent = _post_alert(http_session, INPUT_RTSP_URL, alert_type, confidence)
+                            if sent:
+                                last_alert_times[alert_type] = now
                     except Exception as infer_error:
-                        print(f"Inference error: {infer_error}")
+                        print(f"Inference error: {infer_error}", flush=True)
                         continue
 
                 try:
                     if ffmpeg_proc.stdin is None:
-                        print("FFmpeg stdin is not available. Restarting...")
+                        print("FFmpeg stdin is not available. Restarting...", flush=True)
                         break
                     ffmpeg_proc.stdin.write(last_annotated.tobytes())
                 except BrokenPipeError:
-                    print("FFmpeg pipe broken. Restarting FFmpeg process...")
+                    print("FFmpeg pipe broken. Restarting FFmpeg process...", flush=True)
                     break
 
                 # Pace output to the configured FPS for steadier CPU usage.

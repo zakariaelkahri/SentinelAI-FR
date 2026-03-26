@@ -4,43 +4,30 @@ from langchain_community.document_loaders import TextLoader
 
 from app.core.config import settings
 
-# /app/rag/loader.py -> /app
 BASE_DIR = Path(__file__).resolve().parents[2]
 
 
-def _resolve_source_path() -> Path:
-    configured_path = Path(settings.RAG_SOURCE_PATH)
-    candidate_paths: list[Path] = []
+def _candidate_source_paths() -> list[Path]:
+    configured = Path(settings.RAG_SOURCE_PATH)
+    if not configured.is_absolute():
+        return [BASE_DIR / configured]
 
-    if configured_path.is_absolute():
-        candidate_paths.append(configured_path)
-
-        # Common Docker-to-local fallback: /workspace/... -> <repo>/...
-        try:
-            relative_to_workspace = configured_path.relative_to(Path("/workspace"))
-            candidate_paths.append(BASE_DIR / relative_to_workspace)
-        except ValueError:
-            pass
-    else:
-        candidate_paths.append(BASE_DIR / configured_path)
-
-    for candidate in candidate_paths:
-        if candidate.exists():
-            return candidate
-
-    return candidate_paths[0]
+    candidates = [configured]
+    if str(configured).startswith("/workspace/"):
+        candidates.append(BASE_DIR / configured.relative_to("/workspace"))
+    return candidates
 
 
 def load_documents():
-    source_path = _resolve_source_path()
-    if not source_path.exists():
+    source_path = next((path for path in _candidate_source_paths() if path.exists()), None)
+    if source_path is None:
+        tried = ", ".join(str(path) for path in _candidate_source_paths())
         raise FileNotFoundError(
-            f"RAG source file not found at {source_path}. "
+            f"RAG source file not found. Paths checked: {tried}. "
             "Update RAG_SOURCE_PATH in your environment configuration."
         )
 
-    loader = TextLoader(str(source_path), encoding="utf-8")
-    return loader.load()
+    return TextLoader(str(source_path), encoding="utf-8").load()
 
 
 docs = load_documents()

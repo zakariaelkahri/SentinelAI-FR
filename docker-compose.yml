@@ -76,9 +76,16 @@ services:
       - PROCESS_EVERY_NTH_FRAME=2
       - MAX_READ_FAILURES=40
       - RECONNECT_DELAY_SECONDS=2
+      - BACKEND_ALERTS_URL=http://backend:8000/api/v1/alerts/ingest
+      - THREAT_CLASSES=knife,violence,weapon
+      - ALERT_MIN_CONFIDENCE=0.35
+      - ALERT_COOLDOWN_SECONDS=8
+      - ALERT_HTTP_TIMEOUT_SECONDS=3
+      - PYTHONUNBUFFERED=1
     depends_on:
       - mediamtx
       - rtsp-feeder
+      - backend
     networks:
       - sentinelai-network
     restart: unless-stopped

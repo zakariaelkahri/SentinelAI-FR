@@ -5,19 +5,23 @@ from urllib.parse import urlparse, urlunparse
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, Response, status
 from fastapi.responses import StreamingResponse
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.auth import get_current_active_user, require_role
 from app.core.config import settings
 from app.core.database import AsyncSessionLocal, get_db
 from app.core.security import decode_access_token
+from app.models.alert import Alert
 from app.models.camera import Camera, CameraStatus
 from app.models.operator import Operator
 from app.models.user import User
 from app.schemas.prediction import (
+    AlertIngestRequest,
+    AlertIngestResponse,
     CameraCreateRequest,
     CameraResponse,
+    CameraThreatAlertResponse,
     CameraStreams,
     CameraUpdateRequest,
     ModelInfo,
@@ -29,6 +33,7 @@ MJPEG_FPS = max(1, settings.MJPEG_FPS)
 MJPEG_JPEG_QUALITY = max(40, min(95, settings.MJPEG_JPEG_QUALITY))
 MJPEG_MAX_READ_FAILURES = max(1, settings.MJPEG_MAX_READ_FAILURES)
 MJPEG_RECONNECT_DELAY_SECONDS = settings.MJPEG_RECONNECT_DELAY_SECONDS
+THREAT_ALERT_TYPES = ("knife", "violence", "weapon")
 
 
 def _normalize_rtsp_url(rtsp_url: str) -> str:
@@ -89,6 +94,66 @@ def _derive_yolo_rtsp_url(raw_rtsp_url: str) -> str:
             parsed.fragment,
         )
     )
+
+
+def _replace_rtsp_path_tail(rtsp_url: str, tail: str) -> str:
+    parsed = urlparse(rtsp_url)
+    path_parts = [part for part in parsed.path.split("/") if part]
+
+    if path_parts:
+        path_parts[-1] = tail
+        new_path = "/" + "/".join(path_parts)
+    else:
+        new_path = f"/{tail}"
+
+    return urlunparse(
+        (
+            parsed.scheme,
+            parsed.netloc,
+            new_path,
+            parsed.params,
+            parsed.query,
+            parsed.fragment,
+        )
+    )
+
+
+def _rtsp_variants(rtsp_url: str) -> set[str]:
+    normalized_url = _normalize_rtsp_url(rtsp_url)
+    return {
+        normalized_url,
+        _replace_rtsp_path_tail(normalized_url, "live.stream"),
+        _replace_rtsp_path_tail(normalized_url, "yolo.stream"),
+        _derive_yolo_rtsp_url(normalized_url),
+    }
+
+
+def _find_camera_by_rtsp_url(cameras: list[Camera], source_rtsp_url: str) -> Camera | None:
+    source_variants = _rtsp_variants(source_rtsp_url)
+
+    for camera in cameras:
+        camera_variants = _rtsp_variants(camera.rtsp_url)
+        if source_variants.intersection(camera_variants):
+            return camera
+
+    source_paths = {urlparse(item).path.lower().rstrip("/") for item in source_variants}
+    path_matches: list[Camera] = []
+    for camera in cameras:
+        camera_paths = {
+            urlparse(item).path.lower().rstrip("/")
+            for item in _rtsp_variants(camera.rtsp_url)
+        }
+        if source_paths.intersection(camera_paths):
+            path_matches.append(camera)
+
+    if len(path_matches) == 1:
+        return path_matches[0]
+
+    online_matches = [camera for camera in path_matches if camera.status == CameraStatus.ONLINE]
+    if len(online_matches) == 1:
+        return online_matches[0]
+
+    return None
 
 
 def _open_rtsp_capture(cv2_module, target_rtsp_url: str):
@@ -153,7 +218,7 @@ def _camera_to_response(camera: Camera, request: Request) -> CameraResponse:
 @router.get(
     "/models",
     response_model=list[ModelInfo],
-    dependencies=[Depends(require_role("admin"))],
+    dependencies=[Depends(require_role("admin", "supervisor"))],
 )
 async def list_models(current_user: User = Depends(get_current_active_user)):
     """
@@ -177,11 +242,93 @@ async def list_cameras(
     return [_camera_to_response(camera, request) for camera in cameras]
 
 
+@router.get(
+    "/cameras/{camera_id}/threat-alert",
+    response_model=CameraThreatAlertResponse,
+)
+async def get_camera_threat_alert(
+    camera_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    _ = current_user
+
+    camera_result = await db.execute(select(Camera.id).where(Camera.id == camera_id))
+    if camera_result.scalar_one_or_none() is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Camera not found")
+
+    alert_result = await db.execute(
+        select(Alert.type, Alert.confidence_score, Alert.timestamp)
+        .where(Alert.camera_id == camera_id)
+        .where(func.lower(Alert.type).in_(THREAT_ALERT_TYPES))
+        .order_by(Alert.timestamp.desc())
+        .limit(1)
+    )
+    alert_row = alert_result.first()
+
+    if alert_row is None:
+        return CameraThreatAlertResponse(
+            camera_id=camera_id,
+            detected=False,
+        )
+
+    alert_type, confidence_score, timestamp = alert_row
+    return CameraThreatAlertResponse(
+        camera_id=camera_id,
+        detected=True,
+        label=alert_type,
+        confidence_score=confidence_score,
+        timestamp=timestamp,
+    )
+
+
+@router.post(
+    "/alerts/ingest",
+    response_model=AlertIngestResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def ingest_detection_alert(
+    payload: AlertIngestRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    camera_result = await db.execute(select(Camera).order_by(Camera.name.asc()))
+    cameras = camera_result.scalars().all()
+
+    matched_camera = _find_camera_by_rtsp_url(cameras, payload.source_rtsp_url)
+    if matched_camera is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=(
+                "No camera matches source_rtsp_url. "
+                "Ensure camera.rtsp_url points to the same stream source."
+            ),
+        )
+
+    alert = Alert(
+        type=payload.alert_type.strip().lower(),
+        team_bio=(payload.team_bio or "yolo-rtsp").strip(),
+        confidence_score=payload.confidence_score,
+        snapshot_path=(payload.snapshot_path or "N/A").strip() or "N/A",
+        camera_id=matched_camera.id,
+    )
+    db.add(alert)
+    await db.flush()
+    await db.refresh(alert)
+
+    return AlertIngestResponse(
+        id=alert.id,
+        camera_id=alert.camera_id,
+        alert_type=alert.type,
+        confidence_score=alert.confidence_score,
+        timestamp=alert.timestamp,
+    )
+
+
 @router.post(
     "/cameras",
     response_model=CameraResponse,
     status_code=status.HTTP_201_CREATED,
-    dependencies=[Depends(require_role("admin"))],
+    dependencies=[Depends(require_role("admin", "supervisor"))],
 )
 async def create_camera(
     camera_data: CameraCreateRequest,
@@ -219,7 +366,7 @@ async def create_camera(
 @router.patch(
     "/cameras/{camera_id}",
     response_model=CameraResponse,
-    dependencies=[Depends(require_role("admin"))],
+    dependencies=[Depends(require_role("admin", "supervisor"))],
 )
 async def update_camera(
     camera_id: uuid.UUID,
@@ -273,7 +420,7 @@ async def update_camera(
 @router.delete(
     "/cameras/{camera_id}",
     status_code=status.HTTP_204_NO_CONTENT,
-    dependencies=[Depends(require_role("admin"))],
+    dependencies=[Depends(require_role("admin", "supervisor"))],
 )
 async def delete_camera(
     camera_id: uuid.UUID,

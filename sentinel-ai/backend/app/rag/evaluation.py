@@ -132,7 +132,6 @@ def run_evaluation(k: int = 5) -> dict:
         prompt = structured_prompt_template.format(
             context=context,
             question=query,
-            response_language="English",
         )
         answer = llm.invoke(prompt).content
 

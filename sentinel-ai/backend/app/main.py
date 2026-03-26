@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 from app.core.database import init_db
 from app.core.config import settings
 from app.core import metrics as _metrics
-from app.api import auth, users, health, predictions
+from app.api import assistant, auth, health, predictions, users
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 
 
@@ -45,6 +45,7 @@ app.include_router(auth.router)
 app.include_router(users.router)
 app.include_router(health.router)
 app.include_router(predictions.router)
+app.include_router(assistant.router)
 
 
 @app.get("/")

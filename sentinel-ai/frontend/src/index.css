@@ -351,33 +351,6 @@ a:hover {
   color: #095f7b;
 }
 
-.upload-zone {
-  border: 2px dashed #9ec3d7;
-  border-radius: 14px;
-  padding: 2.2rem 1rem;
-  text-align: center;
-  cursor: pointer;
-  color: #2f566c;
-  background:
-    radial-gradient(circle at 50% 0%, rgba(104, 206, 211, 0.22), transparent 45%),
-    linear-gradient(180deg, #f8fdff, #eef7fd);
-  transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.upload-zone:hover {
-  border-color: #1a8da4;
-  transform: translateY(-1px);
-  box-shadow: 0 10px 18px rgba(8, 65, 92, 0.12);
-}
-
-.upload-zone.has-file {
-  border-color: #199a7d;
-}
-
-.upload-file-name {
-  font-weight: 700;
-  color: #155576;
-}
 
 .btn {
   background: linear-gradient(140deg, var(--app-accent), #1c7ead);
@@ -641,43 +614,6 @@ a:hover {
   margin: 0.25rem 0 0.7rem;
 }
 
-.prediction-card {
-  max-width: 700px;
-}
-
-.prediction-results {
-  margin-top: 1.25rem;
-}
-
-.prediction-results h3 {
-  color: #15394f;
-  margin-bottom: 0.62rem;
-}
-
-.prediction-summary {
-  display: grid;
-  gap: 0.45rem;
-}
-
-.detection-list {
-  list-style: none;
-  margin-top: 0.75rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.detection-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.56rem 0.65rem;
-  border: 1px solid #d5e4ee;
-  background-color: #f4fbff;
-  border-radius: 10px;
-}
-
 .camera-controls {
   max-width: 420px;
 }
@@ -703,6 +639,11 @@ a:hover {
 
 .stream-panel h2 {
   margin-bottom: 0.4rem;
+}
+
+.stream-panel-alert {
+  border-color: #e1a0a0;
+  box-shadow: 0 14px 30px rgba(122, 26, 26, 0.14);
 }
 
 .stream-toolbar {
@@ -738,6 +679,28 @@ a:hover {
   color: #8d5614;
   background-color: #fcefd8;
   border: 1px solid #ebbf82;
+}
+
+.stream-threat-alert {
+  margin-bottom: 0.72rem;
+  border: 1px solid #e6b0b0;
+  border-left: 4px solid #cb3d3d;
+  border-radius: 10px;
+  padding: 0.62rem 0.72rem;
+  background-color: #fff1f1;
+}
+
+.stream-threat-title {
+  margin: 0;
+  font-weight: 800;
+  color: #8a1f1f;
+  letter-spacing: 0.01em;
+}
+
+.stream-threat-details {
+  margin: 0.24rem 0 0;
+  color: #6c2f2f;
+  font-size: 0.88rem;
 }
 
 .stream-frame {
@@ -895,6 +858,68 @@ a:hover {
   border-radius: 7px;
   padding: 0.14rem 0.42rem;
   color: #1b445e;
+}
+
+.assistant-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.assistant-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+}
+
+.assistant-chat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.72rem;
+  max-height: 420px;
+  overflow-y: auto;
+  padding-right: 0.2rem;
+}
+
+.assistant-message {
+  border: 1px solid #d4e0e8;
+  border-radius: 10px;
+  padding: 0.78rem 0.9rem;
+}
+
+.assistant-message-user {
+  background-color: #f4f9fc;
+}
+
+.assistant-message-assistant {
+  background-color: #f8fcf6;
+}
+
+.assistant-message-role {
+  margin: 0 0 0.35rem;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #3e5d71;
+  font-weight: 700;
+}
+
+.assistant-message-text {
+  margin: 0;
+  line-height: 1.48;
+  white-space: pre-wrap;
+}
+
+.assistant-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.assistant-input {
+  min-height: 112px;
+  resize: vertical;
 }
 
 @keyframes auth-fade-in {

@@ -4,7 +4,8 @@ import { api } from '../services/api';
 
 function ManageCameras() {
   const { user } = useAuth();
-  const isAdmin = user?.role_name === 'admin';
+  const canManageCameras =
+    user?.role_name === 'admin' || user?.role_name === 'supervisor';
 
   const [formData, setFormData] = useState({
     name: '',
@@ -29,7 +30,7 @@ function ManageCameras() {
   const [success, setSuccess] = useState('');
 
   const loadCameras = useCallback(async () => {
-    if (!isAdmin) {
+    if (!canManageCameras) {
       return;
     }
 
@@ -48,7 +49,7 @@ function ManageCameras() {
     } finally {
       setIsLoadingCameras(false);
     }
-  }, [isAdmin]);
+  }, [canManageCameras]);
 
   useEffect(() => {
     loadCameras();
@@ -222,16 +223,16 @@ function ManageCameras() {
         </p>
       </header>
 
-      {!isAdmin && (
+      {!canManageCameras && (
         <section className="card">
           <h2>Access Restricted</h2>
           <p className="section-subtitle">
-            Only administrators can create or manage cameras.
+            Only administrators and supervisors can create or manage cameras.
           </p>
         </section>
       )}
 
-      {isAdmin && (
+      {canManageCameras && (
         <>
           {error && <div className="auth-error">{error}</div>}
           {success && <div className="auth-success">{success}</div>}
