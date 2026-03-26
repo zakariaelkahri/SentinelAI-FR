@@ -112,12 +112,19 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./sentinel-ai/backend:/app
+      - ./sentinel-ai/backend/app:/workspace/app
+      - ./sentinel-ai/backend/data:/workspace/data
     env_file:
       - ./sentinel-ai/.env
     environment:
       - DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/sentinel
       - REDIS_URL=redis://redis:6379/0
+      - QDRANT_URL=http://qdrant:6333
+      - QDRANT_COLLECTION=sentinelai-rag
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - OLLAMA_MODEL=llama3.1:8b
+      - OLLAMA_EMBEDDING_MODEL=nomic-embed-text
+      - EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2
       - RTSP_HOST_ALIAS=mediamtx
       - MJPEG_FPS=10
       - MJPEG_JPEG_QUALITY=80
@@ -126,10 +133,38 @@ services:
     depends_on:
       - db
       - redis
+      - qdrant
+      - ollama
       - mediamtx
     networks:
       - sentinelai-network
     restart: unless-stopped
+  
+  # Qdrant Vector Database (RAG)
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: sentinel-qdrant
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    networks:
+      - sentinelai-network
+    restart: unless-stopped
+
+  # Ollama LLM Service (RAG)
+  ollama:
+    image: ollama/ollama:latest
+    container_name: sentinel-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - sentinelai-network
+    restart: unless-stopped
+
 
   # PostgreSQL Database
   db:
@@ -180,6 +215,8 @@ volumes:
   postgres_data:
   redis_data:
   pgadmin_data:
+  qdrant_data:
+  ollama_data:
 
 networks:
   sentinelai-network:

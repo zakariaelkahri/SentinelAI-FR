@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from app.core.database import init_db
 from app.core.config import settings
-from app.api import auth, users, health, predictions
+from app.api import auth, users, health, predictions, rag
 
 
 @asynccontextmanager
@@ -43,6 +43,7 @@ app.include_router(auth.router)
 app.include_router(users.router)
 app.include_router(health.router)
 app.include_router(predictions.router)
+app.include_router(rag.router)
 
 @app.get("/")
 async def root():
