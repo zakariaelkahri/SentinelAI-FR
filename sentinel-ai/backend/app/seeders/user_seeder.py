@@ -94,3 +94,6 @@ class UserSeeder(BaseSeeder):
         self.log("  - 1 Supervisor (username: supervisor, password: supervisor123)")
         self.log("  - 2 Operators (username: operator1/operator2, password: operator123)")
         self.log("⚠️  IMPORTANT: Change default passwords in production!")
+
+
+print("hello")

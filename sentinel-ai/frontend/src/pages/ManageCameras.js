@@ -207,261 +207,282 @@ function ManageCameras() {
     }
   };
 
+  const getStatusClassName = (statusValue) =>
+    `status-chip status-${String(statusValue || 'unknown')
+      .toLowerCase()
+      .replace(/\s+/g, '-')}`;
+
   return (
-    <div>
-      <h1 style={{ marginBottom: '1.5rem' }}>Manage Cameras</h1>
+    <div className="page-shell">
+      <header className="page-header">
+        <p className="page-eyebrow">Administration</p>
+        <h1 className="page-title">Manage Cameras</h1>
+        <p className="page-subtitle">
+          Register and maintain surveillance cameras, connectivity, and operator assignment.
+        </p>
+      </header>
 
       {!isAdmin && (
-        <div className="card">
+        <section className="card">
           <h2>Access Restricted</h2>
-          <p style={{ color: '#6b7280' }}>
+          <p className="section-subtitle">
             Only administrators can create or manage cameras.
           </p>
-        </div>
+        </section>
       )}
 
       {isAdmin && (
-        <div className="dashboard-grid">
-          <div className="card">
-            <h2>Create New Camera</h2>
-            <form className="auth-form" onSubmit={handleSubmit}>
-              <label className="form-group" htmlFor="name">
-                <span>Camera Name</span>
-                <input
-                  id="name"
-                  name="name"
-                  type="text"
-                  className="form-input"
-                  value={formData.name}
-                  onChange={handleChange}
-                  required
-                  minLength={2}
-                  maxLength={100}
-                  disabled={isCreatingCamera}
-                />
-              </label>
+        <>
+          {error && <div className="auth-error">{error}</div>}
+          {success && <div className="auth-success">{success}</div>}
 
-              <label className="form-group" htmlFor="rtsp_url">
-                <span>RTSP URL</span>
-                <input
-                  id="rtsp_url"
-                  name="rtsp_url"
-                  type="text"
-                  className="form-input"
-                  placeholder="rtsp://localhost:8554/live.stream"
-                  value={formData.rtsp_url}
-                  onChange={handleChange}
-                  required
-                  minLength={10}
-                  maxLength={500}
-                  disabled={isCreatingCamera}
-                />
-              </label>
+          <div className="dashboard-grid admin-grid">
+            <section className="card">
+              <h2>Create New Camera</h2>
+              <p className="section-subtitle">
+                Add camera metadata and stream source to make it available for monitoring.
+              </p>
+              <form className="auth-form" onSubmit={handleSubmit}>
+                <label className="form-group" htmlFor="name">
+                  <span>Camera Name</span>
+                  <input
+                    id="name"
+                    name="name"
+                    type="text"
+                    className="form-input"
+                    value={formData.name}
+                    onChange={handleChange}
+                    required
+                    minLength={2}
+                    maxLength={100}
+                    disabled={isCreatingCamera}
+                  />
+                </label>
 
-              <label className="form-group" htmlFor="location">
-                <span>Location</span>
-                <input
-                  id="location"
-                  name="location"
-                  type="text"
-                  className="form-input"
-                  value={formData.location}
-                  onChange={handleChange}
-                  required
-                  minLength={2}
-                  maxLength={255}
-                  disabled={isCreatingCamera}
-                />
-              </label>
+                <label className="form-group" htmlFor="rtsp_url">
+                  <span>RTSP URL</span>
+                  <input
+                    id="rtsp_url"
+                    name="rtsp_url"
+                    type="text"
+                    className="form-input"
+                    placeholder="rtsp://localhost:8554/live.stream"
+                    value={formData.rtsp_url}
+                    onChange={handleChange}
+                    required
+                    minLength={10}
+                    maxLength={500}
+                    disabled={isCreatingCamera}
+                  />
+                </label>
 
-              <label className="form-group" htmlFor="status">
-                <span>Status</span>
-                <select
-                  id="status"
-                  name="status"
-                  className="form-input"
-                  value={formData.status}
-                  onChange={handleChange}
-                  disabled={isCreatingCamera}
+                <label className="form-group" htmlFor="location">
+                  <span>Location</span>
+                  <input
+                    id="location"
+                    name="location"
+                    type="text"
+                    className="form-input"
+                    value={formData.location}
+                    onChange={handleChange}
+                    required
+                    minLength={2}
+                    maxLength={255}
+                    disabled={isCreatingCamera}
+                  />
+                </label>
+
+                <label className="form-group" htmlFor="status">
+                  <span>Status</span>
+                  <select
+                    id="status"
+                    name="status"
+                    className="form-input"
+                    value={formData.status}
+                    onChange={handleChange}
+                    disabled={isCreatingCamera}
+                  >
+                    <option value="online">Online</option>
+                    <option value="offline">Offline</option>
+                    <option value="maintenance">Maintenance</option>
+                    <option value="error">Error</option>
+                  </select>
+                </label>
+
+                <label className="form-group" htmlFor="operator_id">
+                  <span>Operator ID (Optional)</span>
+                  <input
+                    id="operator_id"
+                    name="operator_id"
+                    type="text"
+                    className="form-input"
+                    placeholder="UUID from operators table"
+                    value={formData.operator_id}
+                    onChange={handleChange}
+                    disabled={isCreatingCamera}
+                  />
+                </label>
+
+                <button type="submit" className="btn" disabled={isCreatingCamera}>
+                  {isCreatingCamera ? 'Creating...' : 'Create Camera'}
+                </button>
+              </form>
+            </section>
+
+            <section className="card">
+              <h2>Registered Cameras</h2>
+              <div className="section-actions">
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={loadCameras}
+                  disabled={isLoadingCameras}
                 >
-                  <option value="online">Online</option>
-                  <option value="offline">Offline</option>
-                  <option value="maintenance">Maintenance</option>
-                  <option value="error">Error</option>
-                </select>
-              </label>
+                  {isLoadingCameras ? 'Refreshing...' : 'Refresh Cameras'}
+                </button>
+              </div>
 
-              <label className="form-group" htmlFor="operator_id">
-                <span>Operator ID (Optional)</span>
-                <input
-                  id="operator_id"
-                  name="operator_id"
-                  type="text"
-                  className="form-input"
-                  placeholder="UUID from operators table"
-                  value={formData.operator_id}
-                  onChange={handleChange}
-                  disabled={isCreatingCamera}
-                />
-              </label>
+              {isLoadingCameras && <p className="section-subtitle">Loading cameras...</p>}
 
-              {error && <div className="auth-error">{error}</div>}
-              {success && <div className="auth-success">{success}</div>}
+              {!isLoadingCameras && cameras.length === 0 && (
+                <p className="empty-state">No cameras found.</p>
+              )}
 
-              <button type="submit" className="btn" disabled={isCreatingCamera}>
-                {isCreatingCamera ? 'Creating...' : 'Create Camera'}
-              </button>
-            </form>
-          </div>
+              {!isLoadingCameras && cameras.length > 0 && (
+                <ul className="cameras-list">
+                  {cameras.map((camera) => (
+                    <li key={camera.id}>
+                      {editingCameraId === camera.id ? (
+                        <div className="camera-edit-block">
+                          <label className="form-group" htmlFor={`edit-name-${camera.id}`}>
+                            <span>Camera Name</span>
+                            <input
+                              id={`edit-name-${camera.id}`}
+                              name="name"
+                              type="text"
+                              className="form-input"
+                              value={editData.name}
+                              onChange={handleEditChange}
+                              minLength={2}
+                              maxLength={100}
+                              required
+                            />
+                          </label>
 
-          <div className="card">
-            <h2>Registered Cameras</h2>
-            <div style={{ marginBottom: '0.75rem' }}>
-              <button type="button" className="btn" onClick={loadCameras} disabled={isLoadingCameras}>
-                {isLoadingCameras ? 'Refreshing...' : 'Refresh Cameras'}
-              </button>
-            </div>
+                          <label className="form-group" htmlFor={`edit-rtsp-url-${camera.id}`}>
+                            <span>RTSP URL</span>
+                            <input
+                              id={`edit-rtsp-url-${camera.id}`}
+                              name="rtsp_url"
+                              type="text"
+                              className="form-input"
+                              value={editData.rtsp_url}
+                              onChange={handleEditChange}
+                              minLength={10}
+                              maxLength={500}
+                              required
+                            />
+                          </label>
 
-            {isLoadingCameras && <p style={{ color: '#6b7280' }}>Loading cameras...</p>}
+                          <label className="form-group" htmlFor={`edit-location-${camera.id}`}>
+                            <span>Location</span>
+                            <input
+                              id={`edit-location-${camera.id}`}
+                              name="location"
+                              type="text"
+                              className="form-input"
+                              value={editData.location}
+                              onChange={handleEditChange}
+                              minLength={2}
+                              maxLength={255}
+                              required
+                            />
+                          </label>
 
-            {!isLoadingCameras && cameras.length === 0 && (
-              <p style={{ color: '#6b7280' }}>No cameras found.</p>
-            )}
+                          <label className="form-group" htmlFor={`edit-status-${camera.id}`}>
+                            <span>Status</span>
+                            <select
+                              id={`edit-status-${camera.id}`}
+                              name="status"
+                              className="form-input"
+                              value={editData.status}
+                              onChange={handleEditChange}
+                            >
+                              <option value="online">Online</option>
+                              <option value="offline">Offline</option>
+                              <option value="maintenance">Maintenance</option>
+                              <option value="error">Error</option>
+                            </select>
+                          </label>
 
-            {!isLoadingCameras && cameras.length > 0 && (
-              <ul className="cameras-list">
-                {cameras.map((camera) => (
-                  <li key={camera.id}>
-                    {editingCameraId === camera.id ? (
-                      <div className="camera-edit-block">
-                        <label className="form-group" htmlFor={`edit-name-${camera.id}`}>
-                          <span>Camera Name</span>
-                          <input
-                            id={`edit-name-${camera.id}`}
-                            name="name"
-                            type="text"
-                            className="form-input"
-                            value={editData.name}
-                            onChange={handleEditChange}
-                            minLength={2}
-                            maxLength={100}
-                            required
-                          />
-                        </label>
+                          <label className="form-group" htmlFor={`edit-operator-id-${camera.id}`}>
+                            <span>Operator ID (Optional)</span>
+                            <input
+                              id={`edit-operator-id-${camera.id}`}
+                              name="operator_id"
+                              type="text"
+                              className="form-input"
+                              value={editData.operator_id}
+                              onChange={handleEditChange}
+                              placeholder="Leave empty to unassign operator"
+                            />
+                          </label>
 
-                        <label className="form-group" htmlFor={`edit-rtsp-url-${camera.id}`}>
-                          <span>RTSP URL</span>
-                          <input
-                            id={`edit-rtsp-url-${camera.id}`}
-                            name="rtsp_url"
-                            type="text"
-                            className="form-input"
-                            value={editData.rtsp_url}
-                            onChange={handleEditChange}
-                            minLength={10}
-                            maxLength={500}
-                            required
-                          />
-                        </label>
-
-                        <label className="form-group" htmlFor={`edit-location-${camera.id}`}>
-                          <span>Location</span>
-                          <input
-                            id={`edit-location-${camera.id}`}
-                            name="location"
-                            type="text"
-                            className="form-input"
-                            value={editData.location}
-                            onChange={handleEditChange}
-                            minLength={2}
-                            maxLength={255}
-                            required
-                          />
-                        </label>
-
-                        <label className="form-group" htmlFor={`edit-status-${camera.id}`}>
-                          <span>Status</span>
-                          <select
-                            id={`edit-status-${camera.id}`}
-                            name="status"
-                            className="form-input"
-                            value={editData.status}
-                            onChange={handleEditChange}
-                          >
-                            <option value="online">Online</option>
-                            <option value="offline">Offline</option>
-                            <option value="maintenance">Maintenance</option>
-                            <option value="error">Error</option>
-                          </select>
-                        </label>
-
-                        <label className="form-group" htmlFor={`edit-operator-id-${camera.id}`}>
-                          <span>Operator ID (Optional)</span>
-                          <input
-                            id={`edit-operator-id-${camera.id}`}
-                            name="operator_id"
-                            type="text"
-                            className="form-input"
-                            value={editData.operator_id}
-                            onChange={handleEditChange}
-                            placeholder="Leave empty to unassign operator"
-                          />
-                        </label>
-
-                        <div className="camera-item-actions">
-                          <button
-                            type="button"
-                            className="btn"
-                            onClick={() => handleUpdateCamera(camera.id)}
-                            disabled={cameraActionState[camera.id] === 'updating'}
-                          >
-                            {cameraActionState[camera.id] === 'updating' ? 'Saving...' : 'Save'}
-                          </button>
-                          <button
-                            type="button"
-                            className="btn btn-secondary"
-                            onClick={cancelEditCamera}
-                            disabled={cameraActionState[camera.id] === 'updating'}
-                          >
-                            Cancel
-                          </button>
+                          <div className="camera-item-actions">
+                            <button
+                              type="button"
+                              className="btn"
+                              onClick={() => handleUpdateCamera(camera.id)}
+                              disabled={cameraActionState[camera.id] === 'updating'}
+                            >
+                              {cameraActionState[camera.id] === 'updating' ? 'Saving...' : 'Save'}
+                            </button>
+                            <button
+                              type="button"
+                              className="btn btn-secondary"
+                              onClick={cancelEditCamera}
+                              disabled={cameraActionState[camera.id] === 'updating'}
+                            >
+                              Cancel
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                    ) : (
-                      <>
-                        <p>
-                          <strong>{camera.name}</strong>
-                        </p>
-                        <p>
-                          <span>Location:</span> {camera.location}
-                        </p>
-                        <p>
-                          <span>Status:</span> {String(camera.status || '').toUpperCase()}
-                        </p>
-                        <p>
-                          <span>Operator ID:</span> {camera.operator_id || 'Unassigned'}
-                        </p>
-                        <div className="camera-item-actions">
-                          <button type="button" className="btn" onClick={() => startEditCamera(camera)}>
-                            Edit
-                          </button>
-                          <button
-                            type="button"
-                            className="btn btn-danger"
-                            onClick={() => handleDeleteCamera(camera)}
-                            disabled={cameraActionState[camera.id] === 'deleting'}
-                          >
-                            {cameraActionState[camera.id] === 'deleting' ? 'Deleting...' : 'Delete'}
-                          </button>
-                        </div>
-                      </>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            )}
+                      ) : (
+                        <>
+                          <div className="camera-header-row">
+                            <p className="entity-name">{camera.name}</p>
+                            <span className={getStatusClassName(camera.status)}>
+                              {String(camera.status || 'unknown').toUpperCase()}
+                            </span>
+                          </div>
+                          <p>
+                            <span>Location:</span> {camera.location}
+                          </p>
+                          <p>
+                            <span>Operator ID:</span> {camera.operator_id || 'Unassigned'}
+                          </p>
+                          <div className="camera-item-actions">
+                            <button type="button" className="btn btn-secondary" onClick={() => startEditCamera(camera)}>
+                              Edit
+                            </button>
+                            <button
+                              type="button"
+                              className="btn btn-danger"
+                              onClick={() => handleDeleteCamera(camera)}
+                              disabled={cameraActionState[camera.id] === 'deleting'}
+                            >
+                              {cameraActionState[camera.id] === 'deleting' ? 'Deleting...' : 'Delete'}
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
           </div>
-        </div>
+        </>
       )}
     </div>
   );

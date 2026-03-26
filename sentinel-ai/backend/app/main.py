@@ -1,9 +1,11 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Response
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from app.core.database import init_db
 from app.core.config import settings
-from app.api import auth, users, health, predictions, rag
+from app.core import metrics as _metrics
+from app.api import auth, users, health, predictions
+from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 
 
 @asynccontextmanager
@@ -43,7 +45,7 @@ app.include_router(auth.router)
 app.include_router(users.router)
 app.include_router(health.router)
 app.include_router(predictions.router)
-app.include_router(rag.router)
+
 
 @app.get("/")
 async def root():
@@ -52,3 +54,8 @@ async def root():
         "version": settings.APP_VERSION,
         "docs": "/docs"
     }
+
+
+@app.get("/metrics", tags=["Monitoring"], include_in_schema=False)
+async def metrics() -> Response:
+    return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)

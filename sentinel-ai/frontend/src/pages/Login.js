@@ -47,45 +47,61 @@ function Login() {
 
   return (
     <div className="auth-page">
-      <div className="auth-card">
-        <h1>Sign In</h1>
-        <p className="auth-subtitle">
-          Use your SentinelAI account to access the dashboard and predictions.
-        </p>
+      <div className="auth-shell">
+        <section className="auth-brand-panel">
+          <p className="auth-eyebrow">SentinelAI Security Operations</p>
+          <h1>Secure Access Portal</h1>
+          <p className="auth-brand-copy">
+            Sign in to monitor cameras, detect threats, and keep your environment protected in
+            real time.
+          </p>
+          <div className="auth-pill-list" aria-hidden="true">
+            <span className="auth-pill">24/7 Monitoring</span>
+            <span className="auth-pill">Role-Based Access</span>
+            <span className="auth-pill">Real-Time Alerts</span>
+          </div>
+        </section>
 
-        <form className="auth-form" onSubmit={handleSubmit}>
-          <label className="form-group" htmlFor="username">
-            <span>Username</span>
-            <input
-              id="username"
-              type="text"
-              className="form-input"
-              autoComplete="username"
-              value={username}
-              onChange={(event) => setUsername(event.target.value)}
-              disabled={isSubmitting}
-            />
-          </label>
+        <section className="auth-card">
+          <h2>Sign In</h2>
+          <p className="auth-subtitle">
+            Use your SentinelAI account to access dashboards, streams, and predictions.
+          </p>
 
-          <label className="form-group" htmlFor="password">
-            <span>Password</span>
-            <input
-              id="password"
-              type="password"
-              className="form-input"
-              autoComplete="current-password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              disabled={isSubmitting}
-            />
-          </label>
+          <form className="auth-form" onSubmit={handleSubmit}>
+            <label className="form-group" htmlFor="username">
+              <span>Username</span>
+              <input
+                id="username"
+                type="text"
+                className="form-input"
+                autoComplete="username"
+                value={username}
+                onChange={(event) => setUsername(event.target.value)}
+                disabled={isSubmitting}
+              />
+            </label>
 
-          {error && <div className="auth-error">{error}</div>}
+            <label className="form-group" htmlFor="password">
+              <span>Password</span>
+              <input
+                id="password"
+                type="password"
+                className="form-input"
+                autoComplete="current-password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                disabled={isSubmitting}
+              />
+            </label>
 
-          <button type="submit" className="btn" disabled={isSubmitting}>
-            {isSubmitting ? 'Signing in...' : 'Sign In'}
-          </button>
-        </form>
+            {error && <div className="auth-error">{error}</div>}
+
+            <button type="submit" className="btn auth-submit" disabled={isSubmitting}>
+              {isSubmitting ? 'Signing in...' : 'Sign In'}
+            </button>
+          </form>
+        </section>
       </div>
     </div>
   );

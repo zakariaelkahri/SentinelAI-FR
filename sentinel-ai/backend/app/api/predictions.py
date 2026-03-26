@@ -9,6 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.auth import get_current_active_user, require_role
+from app.core.config import settings
 from app.core.database import AsyncSessionLocal, get_db
 from app.core.security import decode_access_token
 from app.models.camera import Camera, CameraStatus
@@ -24,10 +25,10 @@ from app.schemas.prediction import (
 
 
 router = APIRouter(prefix="/api/v1", tags=["Predictions"])
-MJPEG_FPS = max(1, int(os.getenv("MJPEG_FPS", "10")))
-MJPEG_JPEG_QUALITY = max(40, min(95, int(os.getenv("MJPEG_JPEG_QUALITY", "75"))))
-MJPEG_MAX_READ_FAILURES = max(1, int(os.getenv("MJPEG_MAX_READ_FAILURES", "40")))
-MJPEG_RECONNECT_DELAY_SECONDS = float(os.getenv("MJPEG_RECONNECT_DELAY_SECONDS", "0.25"))
+MJPEG_FPS = max(1, settings.MJPEG_FPS)
+MJPEG_JPEG_QUALITY = max(40, min(95, settings.MJPEG_JPEG_QUALITY))
+MJPEG_MAX_READ_FAILURES = max(1, settings.MJPEG_MAX_READ_FAILURES)
+MJPEG_RECONNECT_DELAY_SECONDS = settings.MJPEG_RECONNECT_DELAY_SECONDS
 
 
 def _normalize_rtsp_url(rtsp_url: str) -> str:
@@ -41,7 +42,7 @@ def _normalize_rtsp_url(rtsp_url: str) -> str:
     if parsed.hostname not in {"localhost", "127.0.0.1", "0.0.0.0"}:
         return rtsp_url
 
-    docker_rtsp_host = os.getenv("RTSP_HOST_ALIAS", "mediamtx")
+    docker_rtsp_host = settings.RTSP_HOST_ALIAS
     auth_prefix = ""
 
     if parsed.username:
@@ -92,10 +93,7 @@ def _derive_yolo_rtsp_url(raw_rtsp_url: str) -> str:
 
 def _open_rtsp_capture(cv2_module, target_rtsp_url: str):
     # Prefer TCP RTSP for stability through Docker networking.
-    ffmpeg_capture_opts = os.getenv(
-        "OPENCV_FFMPEG_CAPTURE_OPTIONS",
-        "rtsp_transport;tcp|max_delay;500000|stimeout;5000000",
-    )
+    ffmpeg_capture_opts = settings.OPENCV_FFMPEG_CAPTURE_OPTIONS
     os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = ffmpeg_capture_opts
 
     capture = cv2_module.VideoCapture(target_rtsp_url, cv2_module.CAP_FFMPEG)

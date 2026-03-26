@@ -171,4 +171,9 @@ export const api = {
     });
     return response.data;
   },
+
+  askSecurityAssistant: async (question) => {
+    const response = await apiClient.post('/api/v1/assistant/security/ask', { question });
+    return response.data;
+  },
 };

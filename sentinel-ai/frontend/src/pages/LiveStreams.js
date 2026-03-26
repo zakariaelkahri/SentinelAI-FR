@@ -108,29 +108,36 @@ function LiveStreams() {
   }
 
   return (
-    <div>
-      <h1 style={{ marginBottom: '1.5rem' }}>Live Streaming</h1>
+    <div className="page-shell">
+      <header className="page-header">
+        <p className="page-eyebrow">Real-Time Monitoring</p>
+        <h1 className="page-title">Live Streaming</h1>
+        <p className="page-subtitle">
+          View active camera feeds with automatic reconnect for resilient monitoring.
+        </p>
+      </header>
 
-      <div className="card" style={{ marginBottom: '1.25rem' }}>
+      <section className="card card-overview">
         <h2>Camera Overview</h2>
         {error && <div className="auth-error">{error}</div>}
 
         {!error && cameras.length === 0 && (
-          <p style={{ color: '#6b7280' }}>No cameras found in database.</p>
+          <p className="empty-state">No cameras found in the database.</p>
         )}
 
         {cameras.length > 0 && (
-          <p style={{ color: '#374151' }}>
-            Showing {activeCameras.length} active camera(s) out of {cameras.length}.
+          <p className="info-text">
+            Showing <strong>{activeCameras.length}</strong> active camera(s) out of{' '}
+            <strong>{cameras.length}</strong>.
           </p>
         )}
 
         {cameras.length > 0 && activeCameras.length === 0 && (
-          <p style={{ color: '#6b7280', marginTop: '0.75rem' }}>
+          <p className="section-subtitle">
             No active cameras detected. Set camera status to ONLINE to display streams.
           </p>
         )}
-      </div>
+      </section>
 
       {activeCameras.length > 0 && (
         <div className="stream-grid">
@@ -144,9 +151,9 @@ function LiveStreams() {
             );
 
             return (
-              <div className="card stream-panel" key={camera.id}>
+              <section className="card stream-panel" key={camera.id}>
                 <h2>{camera.name}</h2>
-                <div className="camera-meta" style={{ marginBottom: '0.75rem' }}>
+                <div className="camera-meta stream-meta">
                   <span>
                     <strong>Location:</strong> {camera.location}
                   </span>
@@ -156,11 +163,15 @@ function LiveStreams() {
                 </div>
                 <div className="stream-toolbar">
                   <span className={`stream-status stream-status-${streamStatus}`}>
-                    {streamStatus === 'live' ? 'Live' : 'Reconnecting...'}
+                    {streamStatus === 'live'
+                      ? 'Live'
+                      : streamStatus === 'connecting'
+                        ? 'Connecting...'
+                        : 'Reconnecting...'}
                   </span>
                   <button
                     type="button"
-                    className="btn"
+                    className="btn btn-secondary"
                     onClick={() => {
                       setStreamStatuses((previous) => ({
                         ...previous,
@@ -200,7 +211,7 @@ function LiveStreams() {
                     requestReconnect(camera.id);
                   }}
                 />
-              </div>
+              </section>
             );
           })}
         </div>

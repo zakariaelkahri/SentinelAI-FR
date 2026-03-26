@@ -8,7 +8,7 @@ MANUAL_PATH = BASE_DIR / "data" / "processing" / "Guide-des-Protocoles.md"
 if not MANUAL_PATH.exists():
     raise FileNotFoundError(
         f"Manual file not found at {MANUAL_PATH}. "
-        "Make sure data/processed/manual.md exists in the project root."
+        "Make sure data/processessing/manual.md exists in the project root."
     )
 
 loader = TextLoader(str(MANUAL_PATH), encoding="utf-8")

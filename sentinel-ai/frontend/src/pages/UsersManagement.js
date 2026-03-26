@@ -167,212 +167,232 @@ function UsersManagement() {
     }
   };
 
+  const getStatusClassName = (statusValue) =>
+    `status-chip status-${String(statusValue || 'unknown')
+      .toLowerCase()
+      .replace(/\s+/g, '-')}`;
+
   return (
-    <div>
-      <h1 style={{ marginBottom: '1.5rem' }}>Users Management</h1>
+    <div className="page-shell">
+      <header className="page-header">
+        <p className="page-eyebrow">Administration</p>
+        <h1 className="page-title">Users Management</h1>
+        <p className="page-subtitle">
+          Create and manage operator and supervisor accounts with role-based status control.
+        </p>
+      </header>
 
       {!isAdmin && (
-        <div className="card">
+        <section className="card">
           <h2>Access Restricted</h2>
-          <p style={{ color: '#6b7280' }}>
+          <p className="section-subtitle">
             Only administrators can create or edit operator and supervisor accounts.
           </p>
-        </div>
+        </section>
       )}
 
       {isAdmin && (
-        <div className="dashboard-grid">
-          <div className="card">
-            <h2>Create Operator / Supervisor</h2>
-            <form className="auth-form" onSubmit={handleSubmit}>
-              <label className="form-group" htmlFor="username">
-                <span>Username</span>
-                <input
-                  id="username"
-                  name="username"
-                  type="text"
-                  className="form-input"
-                  value={formData.username}
-                  onChange={handleChange}
-                  required
-                  minLength={3}
-                  maxLength={100}
-                  disabled={isCreatingUser}
-                />
-              </label>
+        <>
+          {error && <div className="auth-error">{error}</div>}
+          {success && <div className="auth-success">{success}</div>}
 
-              <label className="form-group" htmlFor="password">
-                <span>Password</span>
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  className="form-input"
-                  value={formData.password}
-                  onChange={handleChange}
-                  required
-                  minLength={6}
-                  disabled={isCreatingUser}
-                />
-              </label>
+          <div className="dashboard-grid admin-grid">
+            <section className="card">
+              <h2>Create Operator / Supervisor</h2>
+              <p className="section-subtitle">New accounts get immediate access based on selected role.</p>
+              <form className="auth-form" onSubmit={handleSubmit}>
+                <label className="form-group" htmlFor="username">
+                  <span>Username</span>
+                  <input
+                    id="username"
+                    name="username"
+                    type="text"
+                    className="form-input"
+                    value={formData.username}
+                    onChange={handleChange}
+                    required
+                    minLength={3}
+                    maxLength={100}
+                    disabled={isCreatingUser}
+                  />
+                </label>
 
-              <label className="form-group" htmlFor="role">
-                <span>Role</span>
-                <select
-                  id="role"
-                  name="role"
-                  className="form-input"
-                  value={formData.role}
-                  onChange={handleChange}
-                  disabled={isCreatingUser}
-                >
-                  <option value="operator">Operator</option>
-                  <option value="supervisor">Supervisor</option>
-                </select>
-              </label>
+                <label className="form-group" htmlFor="password">
+                  <span>Password</span>
+                  <input
+                    id="password"
+                    name="password"
+                    type="password"
+                    className="form-input"
+                    value={formData.password}
+                    onChange={handleChange}
+                    required
+                    minLength={6}
+                    disabled={isCreatingUser}
+                  />
+                </label>
 
-              <label className="form-group" htmlFor="status">
-                <span>Status</span>
-                <select
-                  id="status"
-                  name="status"
-                  className="form-input"
-                  value={formData.status}
-                  onChange={handleChange}
-                  disabled={isCreatingUser}
-                >
-                  <option value="active">Active</option>
-                  <option value="inactive">Inactive</option>
-                  <option value="suspended">Suspended</option>
-                </select>
-              </label>
+                <label className="form-group" htmlFor="role">
+                  <span>Role</span>
+                  <select
+                    id="role"
+                    name="role"
+                    className="form-input"
+                    value={formData.role}
+                    onChange={handleChange}
+                    disabled={isCreatingUser}
+                  >
+                    <option value="operator">Operator</option>
+                    <option value="supervisor">Supervisor</option>
+                  </select>
+                </label>
 
-              {error && <div className="auth-error">{error}</div>}
-              {success && <div className="auth-success">{success}</div>}
+                <label className="form-group" htmlFor="status">
+                  <span>Status</span>
+                  <select
+                    id="status"
+                    name="status"
+                    className="form-input"
+                    value={formData.status}
+                    onChange={handleChange}
+                    disabled={isCreatingUser}
+                  >
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                    <option value="suspended">Suspended</option>
+                  </select>
+                </label>
 
-              <button type="submit" className="btn" disabled={isCreatingUser}>
-                {isCreatingUser ? 'Creating...' : 'Create User'}
-              </button>
-            </form>
-          </div>
+                <button type="submit" className="btn" disabled={isCreatingUser}>
+                  {isCreatingUser ? 'Creating...' : 'Create User'}
+                </button>
+              </form>
+            </section>
 
-          <div className="card">
-            <h2>Managed Users</h2>
-            <div style={{ marginBottom: '0.75rem' }}>
-              <button type="button" className="btn" onClick={loadUsers} disabled={isLoadingUsers}>
-                {isLoadingUsers ? 'Refreshing...' : 'Refresh Users'}
-              </button>
-            </div>
+            <section className="card">
+              <h2>Managed Users</h2>
+              <div className="section-actions">
+                <button type="button" className="btn btn-secondary" onClick={loadUsers} disabled={isLoadingUsers}>
+                  {isLoadingUsers ? 'Refreshing...' : 'Refresh Users'}
+                </button>
+              </div>
 
-            {isLoadingUsers && <p style={{ color: '#6b7280' }}>Loading users...</p>}
+              {isLoadingUsers && <p className="section-subtitle">Loading users...</p>}
 
-            {!isLoadingUsers && users.length === 0 && (
-              <p style={{ color: '#6b7280' }}>No operator or supervisor users found.</p>
-            )}
+              {!isLoadingUsers && users.length === 0 && (
+                <p className="empty-state">No operator or supervisor users found.</p>
+              )}
 
-            {!isLoadingUsers && users.length > 0 && (
-              <ul className="users-list">
-                {users.map((managedUser) => (
-                  <li key={managedUser.id}>
-                    {editingUserId === managedUser.id ? (
-                      <div className="user-edit-block">
-                        <label className="form-group" htmlFor={`edit-username-${managedUser.id}`}>
-                          <span>Username</span>
-                          <input
-                            id={`edit-username-${managedUser.id}`}
-                            name="username"
-                            type="text"
-                            className="form-input"
-                            value={editData.username}
-                            onChange={handleEditChange}
-                            minLength={3}
-                            maxLength={100}
-                            required
-                          />
-                        </label>
+              {!isLoadingUsers && users.length > 0 && (
+                <ul className="users-list">
+                  {users.map((managedUser) => (
+                    <li key={managedUser.id}>
+                      {editingUserId === managedUser.id ? (
+                        <div className="user-edit-block">
+                          <label className="form-group" htmlFor={`edit-username-${managedUser.id}`}>
+                            <span>Username</span>
+                            <input
+                              id={`edit-username-${managedUser.id}`}
+                              name="username"
+                              type="text"
+                              className="form-input"
+                              value={editData.username}
+                              onChange={handleEditChange}
+                              minLength={3}
+                              maxLength={100}
+                              required
+                            />
+                          </label>
 
-                        <label className="form-group" htmlFor={`edit-password-${managedUser.id}`}>
-                          <span>New Password (Optional)</span>
-                          <input
-                            id={`edit-password-${managedUser.id}`}
-                            name="password"
-                            type="password"
-                            className="form-input"
-                            value={editData.password}
-                            onChange={handleEditChange}
-                            minLength={6}
-                            placeholder="Leave empty to keep current password"
-                          />
-                        </label>
+                          <label className="form-group" htmlFor={`edit-password-${managedUser.id}`}>
+                            <span>New Password (Optional)</span>
+                            <input
+                              id={`edit-password-${managedUser.id}`}
+                              name="password"
+                              type="password"
+                              className="form-input"
+                              value={editData.password}
+                              onChange={handleEditChange}
+                              minLength={6}
+                              placeholder="Leave empty to keep current password"
+                            />
+                          </label>
 
-                        <label className="form-group" htmlFor={`edit-role-${managedUser.id}`}>
-                          <span>Role</span>
-                          <select
-                            id={`edit-role-${managedUser.id}`}
-                            name="role"
-                            className="form-input"
-                            value={editData.role}
-                            onChange={handleEditChange}
-                          >
-                            <option value="operator">Operator</option>
-                            <option value="supervisor">Supervisor</option>
-                          </select>
-                        </label>
+                          <label className="form-group" htmlFor={`edit-role-${managedUser.id}`}>
+                            <span>Role</span>
+                            <select
+                              id={`edit-role-${managedUser.id}`}
+                              name="role"
+                              className="form-input"
+                              value={editData.role}
+                              onChange={handleEditChange}
+                            >
+                              <option value="operator">Operator</option>
+                              <option value="supervisor">Supervisor</option>
+                            </select>
+                          </label>
 
-                        <label className="form-group" htmlFor={`edit-status-${managedUser.id}`}>
-                          <span>Status</span>
-                          <select
-                            id={`edit-status-${managedUser.id}`}
-                            name="status"
-                            className="form-input"
-                            value={editData.status}
-                            onChange={handleEditChange}
-                          >
-                            <option value="active">Active</option>
-                            <option value="inactive">Inactive</option>
-                            <option value="suspended">Suspended</option>
-                          </select>
-                        </label>
+                          <label className="form-group" htmlFor={`edit-status-${managedUser.id}`}>
+                            <span>Status</span>
+                            <select
+                              id={`edit-status-${managedUser.id}`}
+                              name="status"
+                              className="form-input"
+                              value={editData.status}
+                              onChange={handleEditChange}
+                            >
+                              <option value="active">Active</option>
+                              <option value="inactive">Inactive</option>
+                              <option value="suspended">Suspended</option>
+                            </select>
+                          </label>
 
-                        <div className="user-item-actions">
-                          <button
-                            type="button"
-                            className="btn"
-                            onClick={() => handleUpdateUser(managedUser.id)}
-                            disabled={userActionState[managedUser.id] === 'updating'}
-                          >
-                            {userActionState[managedUser.id] === 'updating' ? 'Saving...' : 'Save'}
-                          </button>
-                          <button
-                            type="button"
-                            className="btn btn-secondary"
-                            onClick={cancelEditUser}
-                            disabled={userActionState[managedUser.id] === 'updating'}
-                          >
-                            Cancel
-                          </button>
+                          <div className="user-item-actions">
+                            <button
+                              type="button"
+                              className="btn"
+                              onClick={() => handleUpdateUser(managedUser.id)}
+                              disabled={userActionState[managedUser.id] === 'updating'}
+                            >
+                              {userActionState[managedUser.id] === 'updating' ? 'Saving...' : 'Save'}
+                            </button>
+                            <button
+                              type="button"
+                              className="btn btn-secondary"
+                              onClick={cancelEditUser}
+                              disabled={userActionState[managedUser.id] === 'updating'}
+                            >
+                              Cancel
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                    ) : (
-                      <>
-                        <span>{managedUser.username}</span>
-                        <span>{managedUser.role}</span>
-                        <span>{managedUser.status}</span>
-                        <button
-                          type="button"
-                          className="btn"
-                          onClick={() => startEditUser(managedUser)}
-                        >
-                          Edit
-                        </button>
-                      </>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            )}
+                      ) : (
+                        <>
+                          <div className="list-row-main">
+                            <span className="entity-name">{managedUser.username}</span>
+                            <div className="meta-chip-row">
+                              <span className="meta-chip">{managedUser.role}</span>
+                              <span className={getStatusClassName(managedUser.status)}>
+                                {managedUser.status}
+                              </span>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            className="btn btn-secondary btn-sm"
+                            onClick={() => startEditUser(managedUser)}
+                          >
+                            Edit
+                          </button>
+                        </>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
           </div>
-        </div>
+        </>
       )}
     </div>
   );

@@ -34,62 +34,77 @@ function Dashboard() {
   ];
 
   return (
-    <div>
-      <h1 style={{ marginBottom: '1.5rem' }}>Dashboard Statistics</h1>
+    <div className="page-shell">
+      <header className="page-header">
+        <p className="page-eyebrow">Control Center</p>
+        <h1 className="page-title">Dashboard Statistics</h1>
+        <p className="page-subtitle">
+          Track platform health, model registry, and system activity from one operations view.
+        </p>
+      </header>
 
       <div className="dashboard-grid">
-        <div className="card">
+        <section className="card metric-card">
           <h2>API Status</h2>
           <div className="status-indicator">
             <span className={`status-dot ${health?.status === 'healthy' ? 'healthy' : 'unhealthy'}`}></span>
-            <span>{health?.status || 'Checking...'}</span>
+            <span className="status-text">{health?.status || 'Checking...'}</span>
           </div>
           {health?.timestamp && (
-            <p style={{ marginTop: '0.5rem', color: '#666', fontSize: '0.875rem' }}>
+            <p className="muted-text">
               Last check: {new Date(health.timestamp).toLocaleTimeString()}
             </p>
           )}
-        </div>
+        </section>
 
-        <div className="card">
+        <section className="card metric-card">
           <h2>Registered Models</h2>
           {models.length > 0 ? (
-            <ul style={{ listStyle: 'none' }}>
+            <ul className="resource-list">
               {models.map((model, idx) => (
-                <li key={idx} style={{ padding: '0.5rem 0', borderBottom: '1px solid #eee' }}>
-                  {model.name} (v{model.latest_version || 'N/A'})
+                <li key={idx}>
+                  <span className="resource-name">{model.name}</span>
+                  <span className="meta-chip">v{model.latest_version || 'N/A'}</span>
                 </li>
               ))}
             </ul>
           ) : (
-            <p style={{ color: '#666' }}>No models registered</p>
+            <p className="empty-state">No models registered.</p>
           )}
-        </div>
+        </section>
 
-        <div className="card">
+        <section className="card metric-card">
           <h2>Quick Links</h2>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            <a href="http://localhost:5000" target="_blank" rel="noopener noreferrer">MLflow UI</a>
-            <a href="http://localhost:8080" target="_blank" rel="noopener noreferrer">Airflow UI</a>
-            <a href="http://localhost:3001" target="_blank" rel="noopener noreferrer">Grafana</a>
-            <a href="http://localhost:9090" target="_blank" rel="noopener noreferrer">Prometheus</a>
+          <div className="quick-links">
+            <a className="endpoint-link" href="http://localhost:5000" target="_blank" rel="noopener noreferrer">
+              MLflow UI
+            </a>
+            <a className="endpoint-link" href="http://localhost:8080" target="_blank" rel="noopener noreferrer">
+              Airflow UI
+            </a>
+            <a className="endpoint-link" href="http://localhost:3001" target="_blank" rel="noopener noreferrer">
+              Grafana
+            </a>
+            <a className="endpoint-link" href="http://localhost:9090" target="_blank" rel="noopener noreferrer">
+              Prometheus
+            </a>
           </div>
-        </div>
+        </section>
 
-        <div className="card" style={{ gridColumn: 'span 2' }}>
+        <section className="card card-span-two">
           <h2>Request Metrics (24h)</h2>
-          <ResponsiveContainer width="100%" height={250}>
-            <LineChart data={mockMetrics}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="time" />
-              <YAxis yAxisId="left" />
-              <YAxis yAxisId="right" orientation="right" />
+          <ResponsiveContainer width="100%" height={260}>
+            <LineChart data={mockMetrics} margin={{ top: 8, right: 12, left: -12, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="4 4" stroke="#c8d7e2" />
+              <XAxis dataKey="time" stroke="#345164" />
+              <YAxis yAxisId="left" stroke="#345164" />
+              <YAxis yAxisId="right" orientation="right" stroke="#345164" />
               <Tooltip />
-              <Line yAxisId="left" type="monotone" dataKey="requests" stroke="#1a1a2e" name="Requests" />
-              <Line yAxisId="right" type="monotone" dataKey="latency" stroke="#22c55e" name="Latency (ms)" />
+              <Line yAxisId="left" type="monotone" dataKey="requests" stroke="#0b88a0" name="Requests" strokeWidth={2.4} dot={false} />
+              <Line yAxisId="right" type="monotone" dataKey="latency" stroke="#1d9864" name="Latency (ms)" strokeWidth={2.4} dot={false} />
             </LineChart>
           </ResponsiveContainer>
-        </div>
+        </section>
       </div>
     </div>
   );

@@ -31,13 +31,26 @@ function Predictions() {
   };
 
   return (
-    <div>
-      <h1 style={{ marginBottom: '1.5rem' }}>Run Predictions</h1>
+    <div className="page-shell">
+      <header className="page-header">
+        <p className="page-eyebrow">Vision Inference</p>
+        <h1 className="page-title">Run Predictions</h1>
+        <p className="page-subtitle">
+          Upload a frame and run the latest model to detect suspicious objects in seconds.
+        </p>
+      </header>
 
-      <div className="card" style={{ maxWidth: '600px' }}>
+      <section className="card prediction-card">
         <h2>Upload Image</h2>
-        <form onSubmit={handleSubmit}>
-          <div className="upload-zone" onClick={() => document.getElementById('file-input').click()}>
+        <p className="section-subtitle">
+          Supported formats: JPG, PNG, WEBP. Larger files may take longer to process.
+        </p>
+
+        <form className="auth-form" onSubmit={handleSubmit}>
+          <div
+            className={`upload-zone${file ? ' has-file' : ''}`}
+            onClick={() => document.getElementById('file-input').click()}
+          >
             <input
               id="file-input"
               type="file"
@@ -46,42 +59,47 @@ function Predictions() {
               style={{ display: 'none' }}
             />
             {file ? (
-              <p>{file.name}</p>
+              <p className="upload-file-name">{file.name}</p>
             ) : (
               <p>Click to select an image or drag and drop</p>
             )}
           </div>
 
-          <button type="submit" className="btn" style={{ marginTop: '1rem' }} disabled={!file || loading}>
+          <button type="submit" className="btn" disabled={!file || loading}>
             {loading ? 'Processing...' : 'Run Prediction'}
           </button>
         </form>
 
-        {error && (
-          <div style={{ marginTop: '1rem', padding: '1rem', backgroundColor: '#fee2e2', borderRadius: '4px', color: '#dc2626' }}>
-            {error}
-          </div>
-        )}
+        {error && <div className="auth-error">{error}</div>}
 
         {result && (
-          <div style={{ marginTop: '1.5rem' }}>
+          <div className="prediction-results">
             <h3>Results</h3>
-            <p><strong>Model:</strong> {result.model_name}</p>
-            <p><strong>Inference Time:</strong> {result.inference_time_ms.toFixed(2)} ms</p>
-            <p><strong>Detections:</strong> {result.predictions.length}</p>
+            <div className="prediction-summary">
+              <p>
+                <strong>Model:</strong> {result.model_name}
+              </p>
+              <p>
+                <strong>Inference Time:</strong> {result.inference_time_ms.toFixed(2)} ms
+              </p>
+              <p>
+                <strong>Detections:</strong> {result.predictions.length}
+              </p>
+            </div>
 
             {result.predictions.length > 0 && (
-              <ul style={{ marginTop: '0.5rem', listStyle: 'none' }}>
+              <ul className="detection-list">
                 {result.predictions.map((pred, idx) => (
-                  <li key={idx} style={{ padding: '0.5rem', backgroundColor: '#f5f5f5', marginTop: '0.5rem', borderRadius: '4px' }}>
-                    {pred.class_name} - {(pred.confidence * 100).toFixed(1)}%
+                  <li key={idx} className="detection-item">
+                    <span className="resource-name">{pred.class_name}</span>
+                    <span className="meta-chip">{(pred.confidence * 100).toFixed(1)}%</span>
                   </li>
                 ))}
               </ul>
             )}
           </div>
         )}
-      </div>
+      </section>
     </div>
   );
 }

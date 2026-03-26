@@ -18,11 +18,17 @@ const serviceEndpoints = [
 
 function Params() {
   return (
-    <div>
-      <h1 style={{ marginBottom: '1.5rem' }}>Params</h1>
+    <div className="page-shell">
+      <header className="page-header">
+        <p className="page-eyebrow">System Configuration</p>
+        <h1 className="page-title">Params</h1>
+        <p className="page-subtitle">
+          Review the active stream parameters and local service endpoints used by SentinelAI.
+        </p>
+      </header>
 
       <div className="dashboard-grid">
-        <div className="card">
+        <section className="card">
           <h2>Streaming Params</h2>
           <ul className="params-list">
             {streamParams.map((param) => (
@@ -32,19 +38,19 @@ function Params() {
               </li>
             ))}
           </ul>
-          <p style={{ color: '#6b7280', marginTop: '1rem' }}>
-            These values reflect current Docker compose defaults for stable live streaming.
+          <p className="section-subtitle">
+            These values reflect the current Docker Compose defaults for stable live streaming.
           </p>
-        </div>
+        </section>
 
-        <div className="card">
+        <section className="card">
           <h2>Platform Endpoints</h2>
           <ul className="params-list">
             {serviceEndpoints.map((service) => (
               <li key={service.name}>
                 <span>{service.name}</span>
                 {service.url.startsWith('http') ? (
-                  <a href={service.url} target="_blank" rel="noopener noreferrer">
+                  <a className="endpoint-link" href={service.url} target="_blank" rel="noopener noreferrer">
                     {service.url}
                   </a>
                 ) : (
@@ -53,7 +59,7 @@ function Params() {
               </li>
             ))}
           </ul>
-        </div>
+        </section>
       </div>
     </div>
   );
