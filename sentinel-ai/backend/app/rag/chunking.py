@@ -3,8 +3,10 @@ from langchain_text_splitters import (
     RecursiveCharacterTextSplitter
 )
 
+from app.core.config import settings
 
-def hybrid_chunk(text):
+
+def hybrid_chunk(text: str):
     md_splitter = MarkdownHeaderTextSplitter([
         ("#", "Chapter"),
         ("##", "Section"),
@@ -14,8 +16,8 @@ def hybrid_chunk(text):
     structured_docs = md_splitter.split_text(text)
 
     recursive_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=800,
-        chunk_overlap=150,
+        chunk_size=settings.RAG_CHUNK_SIZE,
+        chunk_overlap=settings.RAG_CHUNK_OVERLAP,
         separators=["\n\n", "\n", ". ", " ", ""],
     )
 

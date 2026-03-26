@@ -65,7 +65,7 @@ services:
     volumes:
       - ./model_training/runs:/workspace/runs
     environment:
-      - MODEL_PATH=/workspace/runs/detect/runs/1yolov8m_realy_violence2_test_v3/weights/best.pt
+      - MODEL_PATH=/workspace/runs/detect/runs/yolo8m_violence_detection/weights/best.pt
       - INPUT_RTSP_URL=rtsp://mediamtx:8554/live.stream
       - OUTPUT_RTSP_URL=rtsp://mediamtx:8554/yolo.stream
       - RTSP_TRANSPORT=tcp

@@ -1,8 +1,8 @@
-
 import logging
-from app.rag.retriever import get_retriever
+
 from app.rag.llm import local_model
 from app.rag.prompt import structured_prompt_template
+from app.rag.retriever import get_retriever
 
 logger = logging.getLogger(__name__)
 
@@ -10,76 +10,74 @@ logger = logging.getLogger(__name__)
 TEST_CASES = [
     {
         "query_id": "q1",
-        "query": "Quels sont les traitements recommandés pour le prurit en médecine adulte ?",
+        "query": "What should happen when a complaint is made against a security officer?",
         "relevant_docs": [
-            "prurit traitement gale",
-            "prurit antimycosique",
-            "prurit antihistaminique",
-            "prurit dermocorticoides"
-        ]
+            "the complaint must be recorded and investigated",
+            "The Company will appoint an investigator",
+            "A full investigation will be carried out",
+            "Security Officer's notebook will normally have a complete entry",
+        ],
     },
     {
         "query_id": "q2",
-        "query": "Que faut-il faire en cas de suspicion d'infection dans un contexte de prurit ?",
+        "query": "What is expected from a security officer before commencing duty?",
         "relevant_docs": [
-            "Si suspicion d'infection, se référer au chapitre Infection cutanée."
-        ]
+            "A Security Officer is expected to have a full and complete knowledge of the duties, procedures, instructions and specifics of your location before commencing duty",
+            "lacking in knowledge of any aspect of these instructions",
+        ],
     },
     {
         "query_id": "q3",
-        "query": "Que faire en cas de traumatisme en dent de lait avec dent expulsée ?",
+        "query": "What actions should officers take during patrol when they notice suspicious packages or hazards?",
         "relevant_docs": [
-            "Si Dent expulsée : =>NE PAS REMETTRE",
-            "On ne veut pas léser le gemme de la dent définitive qui est dessous.",
-            "Rechercher la dent pour vérifier qu'il s'agit bien d'une expulsion (et non d'une impaction, ou encore d'une inhalation/ ingestion).",
-            "Contrôle de la plaie gingivale (désinfection avec compresse chlorhexidine si possible, morsure dans une compresse si ça saigne).",
-            "On ne fait rien quand c'est une dent de lait, la petite souris passera en avance."
-        ]
+            "keep a lookout for and take appropriate action regarding suspicious packages",
+            "fire hazards, water leaks, gas leaks",
+            "use your pocket book",
+        ],
     },
     {
         "query_id": "q4",
-        "query": "Quels sont les signes cliniques d'un abcès ou d'une cellulite dentaire chez l'enfant ?",
+        "query": "What reporting records are required after an incident on site?",
         "relevant_docs": [
-            "ABCES (boule de pus) / CELLULITE (inflammation et gonflement +++)",
-            "A Les signes cliniques : - Empâtement autour de la dent et dans le vestibule - Souvent petite boule de pus sur le coté de la gencive - Souvent légère mobilité de la dent sans choc préalable - ADP (Adénopathie = ganglions) périphérique en relation - Début de tuméfaction externe ou Cellulite dans les cas plus avancés",
-            "B Les signes à vérifier si cellulite (gonflement++ de la joue) : Cellulite en bas : Vérifier que le plancher (sous la langue) est souple Cellulite en haut : Vérifier que l'arrière de la gorge et le palais mou ne sont pas gonflés"
-        ]
+            "Anything that happens on site that is outside of the standard operations will require an incident report",
+            "use your notes from your pocket book to compile your report",
+            "Daily Occurrence Book",
+        ],
     },
     {
         "query_id": "q5",
-        "query": "Que faut-il faire en cas de brûlure de méduse en médecine adulte ?",
+        "query": "What should a security officer do when discovering a fire?",
         "relevant_docs": [
-            "Retirer les filaments visibles avec une pince ou à la main doublement gantée, puis appliquer de la mousse à raser. Racler délicatement la mousse contenant les nématocystes ainsi piégés à l'aide d'une abaisse langue.",
-            "Rincer abondamment la piqûre à l'eau de mer ou au sérum physiologique. La toxine étant thermolabile, l'eau peut être chaude sans brûler. Le rinçage dure jusqu'à disparition des symptômes (environ 30 minutes).",
-            "Après décontamination, la plaie sera séchée puis enduite d'anesthésiques locaux ou de corticoïdes de classe moyenne ou faible (Locapred) dont les effets bénéfiques ont été démontrés principalement devant la persistance des lésions après 24 heures.",
-            "Vérifier et éventuellement remettre à jour la vaccination antitétanique (c.f. Protocole).",
-            "Les lésions ulcérées seront nettoyées quotidiennement et recouvertes d'une fine couche de lotion antiseptique non allergisante (chlorhexidine aqueuse 0.2%).",
-            "Les traitements antalgiques de palier I à II, rarement III sont indiqués (échelle thérapeutique de la douleur selon l'OMS).",
-            "Toujours anticiper une réaction anaphylactique et donc être préparé à y répondre par les antihistaminiques et les corticoïdes par voie veineuse."
-        ]
-    }
+            "ACTIONS ON DISCOVERY OF A FIRE",
+            "Inform",
+            "Restrict",
+            "Extinguish OR Evacuate",
+        ],
+    },
 ]
 
 
 def precision_at_k(retrieved_docs: list, relevant_snippets: list[str], k: int) -> float:
-    """Precision@k = (relevant docs in top-k) / k"""
+    """Precision@k = (relevant docs in top-k) / k."""
     top_k = retrieved_docs[:k]
     if not top_k:
         return 0.0
     relevant_count = sum(
-        1 for doc in top_k
+        1
+        for doc in top_k
         if any(s.lower() in doc.page_content.lower() for s in relevant_snippets)
     )
     return relevant_count / k
 
 
 def recall_at_k(retrieved_docs: list, relevant_snippets: list[str], k: int) -> float:
-    """Recall@k = (relevant snippets found in top-k) / (total relevant snippets)"""
+    """Recall@k = (relevant snippets found in top-k) / total relevant snippets."""
     if not relevant_snippets:
         return 0.0
     top_k = retrieved_docs[:k]
     found = sum(
-        1 for snippet in relevant_snippets
+        1
+        for snippet in relevant_snippets
         if any(snippet.lower() in doc.page_content.lower() for doc in top_k)
     )
     return found / len(relevant_snippets)
@@ -123,14 +121,20 @@ def _parse_score(text: str) -> float:
 def run_evaluation(k: int = 5) -> dict:
     llm = local_model()
     results = []
+    retriever = get_retriever()
 
     for tc in TEST_CASES:
         qid, query, relevant = tc["query_id"], tc["query"], tc["relevant_docs"]
-        logger.info(f"Evaluating {qid}: {query[:60]}...")
+        logger.info("Evaluating %s: %s...", qid, query[:60])
 
-        docs = get_retriever().invoke(query)
+        docs = retriever.invoke(query)
         context = "\n\n".join([d.page_content for d in docs])
-        answer = llm.invoke(structured_prompt_template.format(context=context, question=query)).content
+        prompt = structured_prompt_template.format(
+            context=context,
+            question=query,
+            response_language="English",
+        )
+        answer = llm.invoke(prompt).content
 
         result = {
             "query_id": qid,
@@ -142,8 +146,13 @@ def run_evaluation(k: int = 5) -> dict:
         }
         results.append(result)
         logger.info(
-            f"  P@{k}={result['precision_at_k']:.2f}  R@{k}={result['recall_at_k']:.2f}  "
-            f"Relevance={result['answer_relevance']:.2f}  Faithfulness={result['faithfulness']:.2f}"
+            "  P@%s=%.2f  R@%s=%.2f  Relevance=%.2f  Faithfulness=%.2f",
+            k,
+            result["precision_at_k"],
+            k,
+            result["recall_at_k"],
+            result["answer_relevance"],
+            result["faithfulness"],
         )
 
     n = len(results)
@@ -163,5 +172,7 @@ def run_evaluation(k: int = 5) -> dict:
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     r = run_evaluation(k=5)
-    print(f"\nAvg P@k={r['avg_precision_at_k']:.4f}  R@k={r['avg_recall_at_k']:.4f}  "
-          f"Relevance={r['avg_answer_relevance']:.4f}  Faithfulness={r['avg_faithfulness']:.4f}")
+    print(
+        f"\nAvg P@k={r['avg_precision_at_k']:.4f}  R@k={r['avg_recall_at_k']:.4f}  "
+        f"Relevance={r['avg_answer_relevance']:.4f}  Faithfulness={r['avg_faithfulness']:.4f}"
+    )

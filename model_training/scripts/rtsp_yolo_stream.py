@@ -8,7 +8,7 @@ from ultralytics import YOLO
 
 MODEL_PATH = os.getenv(
     "MODEL_PATH",
-    "/workspace/runs/detect/runs/1yolov8m_realy_violence2_test_v3/weights/best.pt",
+    "/workspace/runs/detect/runs/yolo8m_violence_detection/weights/best.pt",
 )
 INPUT_RTSP_URL = os.getenv("INPUT_RTSP_URL", "rtsp://mediamtx:8554/live.stream")
 OUTPUT_RTSP_URL = os.getenv("OUTPUT_RTSP_URL", "rtsp://mediamtx:8554/yolo.stream")

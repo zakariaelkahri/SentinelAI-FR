@@ -4,13 +4,19 @@ from langchain_core.documents import Document
 from langchain_huggingface import HuggingFaceEmbeddings
 from app.core.config import settings
 
-md_text = docs[0].page_content
-chunks = hybrid_chunk(md_text)
+documents: list[Document] = []
 
-documents = [
-    Document(page_content=chunk["content"], metadata=chunk.get("metadata", {}))
-    for chunk in chunks
-]
+for source_doc in docs:
+    chunks = hybrid_chunk(source_doc.page_content)
+    for chunk in chunks:
+        metadata = dict(source_doc.metadata)
+        metadata.update(chunk.get("metadata", {}))
+        documents.append(
+            Document(page_content=chunk["content"], metadata=metadata)
+        )
+
+if not documents:
+    raise ValueError("No documents were generated from the configured RAG source file.")
 
 embeddings = HuggingFaceEmbeddings(
     model_name=settings.EMBEDDING_MODEL

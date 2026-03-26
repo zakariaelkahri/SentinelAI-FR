@@ -1,33 +1,54 @@
-from app.rag.embeddings import embeddings
-from langchain_qdrant import QdrantVectorStore
-from qdrant_client import QdrantClient
+from functools import lru_cache
+
 from langchain.retrievers import ContextualCompressionRetriever
 from langchain.retrievers.document_compressors import CrossEncoderReranker
 from langchain_community.cross_encoders import HuggingFaceCrossEncoder
+from langchain_qdrant import QdrantVectorStore
+from qdrant_client import QdrantClient
 
-client = QdrantClient(url="http://qdrant:6333")
+from app.core.config import settings
+from app.rag.embeddings import embeddings
 
-vectorstore = QdrantVectorStore(
-    client=client,
-    collection_name="medical_manual",
-    embedding=embeddings
-)
 
-BASE_RETRIEVER_K = 20
-RERANKER_MODEL = "BAAI/bge-reranker-base"
-RERANKER_TOP_N = 5
+@lru_cache(maxsize=1)
+def get_retriever() -> ContextualCompressionRetriever:
+    client = QdrantClient(
+        url=settings.QDRANT_URL,
+        api_key=settings.QDRANT_API_KEY,
+    )
 
-base_retriever = vectorstore.as_retriever(search_kwargs={"k": BASE_RETRIEVER_K})
+    try:
+        collection_exists = client.collection_exists(settings.QDRANT_COLLECTION)
+    except Exception as exc:
+        raise RuntimeError(
+            f"Unable to connect to Qdrant at {settings.QDRANT_URL}. "
+            f"Original error: {exc}"
+        ) from exc
 
-model = HuggingFaceCrossEncoder(model_name=RERANKER_MODEL)
+    if not collection_exists:
+        raise RuntimeError(
+            f"Qdrant collection '{settings.QDRANT_COLLECTION}' does not exist. "
+            "Build the index first by running: python -m app.rag.vectorstore"
+        )
 
-compressor = CrossEncoderReranker(model=model, top_n=RERANKER_TOP_N)
+    vectorstore = QdrantVectorStore(
+        client=client,
+        collection_name=settings.QDRANT_COLLECTION,
+        embedding=embeddings,
+    )
 
-retriever = ContextualCompressionRetriever(
-    base_compressor=compressor,
-    base_retriever=base_retriever
-)
+    base_retriever = vectorstore.as_retriever(
+        search_kwargs={"k": settings.RAG_RETRIEVER_K}
+    )
 
-# docs = retriever.invoke("What are the duties of a security officer?")
-# print(docs)
+    reranker_model = HuggingFaceCrossEncoder(model_name=settings.RAG_RERANKER_MODEL)
+    compressor = CrossEncoderReranker(
+        model=reranker_model,
+        top_n=settings.RAG_RERANKER_TOP_N,
+    )
+
+    return ContextualCompressionRetriever(
+        base_compressor=compressor,
+        base_retriever=base_retriever,
+    )
 
