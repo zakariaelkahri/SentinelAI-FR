@@ -1,0 +1,43 @@
+groups:
+  - name: rag-performance-alerts
+    interval: 30s
+    rules:
+      - alert: RagHighLatencyP95
+        expr: histogram_quantile(0.95, sum(rate(rag_latency_seconds_bucket{job="backend"}[5m])) by (le)) > 3
+        for: 10m
+        labels:
+          severity: warning
+          service: rag
+        annotations:
+          summary: "RAG latency p95 is high"
+          description: "RAG latency p95 has stayed above 3 seconds for 10 minutes."
+
+      - alert: RagCriticalLatencyP95
+        expr: histogram_quantile(0.95, sum(rate(rag_latency_seconds_bucket{job="backend"}[5m])) by (le)) > 6
+        for: 5m
+        labels:
+          severity: critical
+          service: rag
+        annotations:
+          summary: "RAG latency p95 is critically high"
+          description: "RAG latency p95 has stayed above 6 seconds for 5 minutes."
+
+      - alert: RagHighErrorRate
+        expr: (sum(rate(rag_errors_total{job="backend"}[5m])) / clamp_min(sum(rate(rag_pipeline_calls_total{job="backend"}[5m])), 0.001)) > 0.05 and sum(rate(rag_pipeline_calls_total{job="backend"}[5m])) > 0
+        for: 10m
+        labels:
+          severity: warning
+          service: rag
+        annotations:
+          summary: "RAG error rate is elevated"
+          description: "RAG error rate has stayed above 5% for 10 minutes."
+
+      - alert: RagCriticalErrorRate
+        expr: (sum(rate(rag_errors_total{job="backend"}[5m])) / clamp_min(sum(rate(rag_pipeline_calls_total{job="backend"}[5m])), 0.001)) > 0.15 and sum(rate(rag_pipeline_calls_total{job="backend"}[5m])) > 0
+        for: 5m
+        labels:
+          severity: critical
+          service: rag
+        annotations:
+          summary: "RAG error rate is critically high"
+          description: "RAG error rate has stayed above 15% for 5 minutes."

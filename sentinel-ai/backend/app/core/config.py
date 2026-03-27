@@ -28,6 +28,8 @@ class Settings(BaseSettings):
 
     # MLFlow Settings
     MLFLOW_TRACKING_URI: Optional[str] = None
+    RAG_MLFLOW_ENABLED: bool = True
+    RAG_MLFLOW_EXPERIMENT_NAME: str = "sentinelai-rag"
 
     # Google AI Settings
     GOOGLE_API_KEY: Optional[str] = None

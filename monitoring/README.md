@@ -19,6 +19,9 @@ This project ships with Prometheus + Grafana + MLflow preconfigured.
 - Prometheus scrapes:
   - `prometheus:9090`
   - `backend:8000/metrics`
+- Prometheus alert rules:
+  - `monitoring/prometheus/rules/rag-alerts.yml`
+  - Alerts for RAG p95 latency and RAG error rate (warning + critical)
 - Grafana datasource:
   - Prometheus (`uid=prometheus`)
 - Grafana dashboard:

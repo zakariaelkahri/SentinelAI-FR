@@ -19,7 +19,6 @@ def build_vectorstore(force_reindex: bool | None = None) -> QdrantVectorStore:
         documents=documents,
         embedding=embeddings,
         url=settings.QDRANT_URL,
-        api_key=settings.QDRANT_API_KEY,
         collection_name=settings.QDRANT_COLLECTION,
     )
 

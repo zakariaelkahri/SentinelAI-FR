@@ -1,8 +1,10 @@
 import logging
 
+from app.core.config import settings
 from app.rag.llm import local_model
 from app.rag.prompt import structured_prompt_template
 from app.rag.retriever import get_retriever
+from app.rag.tracking import log_metrics, log_params, rag_mlflow_run
 
 logger = logging.getLogger(__name__)
 
@@ -119,53 +121,91 @@ def _parse_score(text: str) -> float:
 
 
 def run_evaluation(k: int = 5) -> dict:
-    llm = local_model()
-    results = []
-    retriever = get_retriever()
-
-    for tc in TEST_CASES:
-        qid, query, relevant = tc["query_id"], tc["query"], tc["relevant_docs"]
-        logger.info("Evaluating %s: %s...", qid, query[:60])
-
-        docs = retriever.invoke(query)
-        context = "\n\n".join([d.page_content for d in docs])
-        prompt = structured_prompt_template.format(
-            context=context,
-            question=query,
+    with rag_mlflow_run("rag_evaluation", tags={"entrypoint": "evaluation"}) as mlflow:
+        log_params(
+            mlflow,
+            {
+                "evaluation_k": k,
+                "test_case_count": len(TEST_CASES),
+                "retriever_k": settings.RAG_RETRIEVER_K,
+                "reranker_model": settings.RAG_RERANKER_MODEL,
+                "reranker_top_n": settings.RAG_RERANKER_TOP_N,
+                "context_docs_limit": settings.RAG_CONTEXT_DOCS,
+                "max_context_chars": settings.RAG_MAX_CONTEXT_CHARS,
+                "llm_model": settings.OLLAMA_MODEL,
+                "embedding_model": settings.EMBEDDING_MODEL,
+            },
         )
-        answer = llm.invoke(prompt).content
 
-        result = {
-            "query_id": qid,
-            "query": query,
-            "precision_at_k": precision_at_k(docs, relevant, k),
-            "recall_at_k": recall_at_k(docs, relevant, k),
-            "answer_relevance": answer_relevance(query, answer, llm),
-            "faithfulness": faithfulness(context, answer, llm),
+        llm = local_model()
+        results = []
+        retriever = get_retriever()
+
+        for index, tc in enumerate(TEST_CASES):
+            qid, query, relevant = tc["query_id"], tc["query"], tc["relevant_docs"]
+            logger.info("Evaluating %s: %s...", qid, query[:60])
+
+            docs = retriever.invoke(query)
+            context = "\n\n".join([d.page_content for d in docs])
+            prompt = structured_prompt_template.format(
+                context=context,
+                question=query,
+            )
+            answer = llm.invoke(prompt).content
+
+            result = {
+                "query_id": qid,
+                "query": query,
+                "precision_at_k": precision_at_k(docs, relevant, k),
+                "recall_at_k": recall_at_k(docs, relevant, k),
+                "answer_relevance": answer_relevance(query, answer, llm),
+                "faithfulness": faithfulness(context, answer, llm),
+            }
+            results.append(result)
+
+            log_metrics(
+                mlflow,
+                {
+                    "precision_at_k": result["precision_at_k"],
+                    "recall_at_k": result["recall_at_k"],
+                    "answer_relevance": result["answer_relevance"],
+                    "faithfulness": result["faithfulness"],
+                },
+                step=index,
+            )
+
+            logger.info(
+                "  P@%s=%.2f  R@%s=%.2f  Relevance=%.2f  Faithfulness=%.2f",
+                k,
+                result["precision_at_k"],
+                k,
+                result["recall_at_k"],
+                result["answer_relevance"],
+                result["faithfulness"],
+            )
+
+        n = len(results)
+        evaluation = {
+            "k": k,
+            "num_test_cases": n,
+            "per_query_results": results,
+            "avg_precision_at_k": sum(r["precision_at_k"] for r in results) / n,
+            "avg_recall_at_k": sum(r["recall_at_k"] for r in results) / n,
+            "avg_answer_relevance": sum(r["answer_relevance"] for r in results) / n,
+            "avg_faithfulness": sum(r["faithfulness"] for r in results) / n,
         }
-        results.append(result)
-        logger.info(
-            "  P@%s=%.2f  R@%s=%.2f  Relevance=%.2f  Faithfulness=%.2f",
-            k,
-            result["precision_at_k"],
-            k,
-            result["recall_at_k"],
-            result["answer_relevance"],
-            result["faithfulness"],
+
+        log_metrics(
+            mlflow,
+            {
+                "avg_precision_at_k": evaluation["avg_precision_at_k"],
+                "avg_recall_at_k": evaluation["avg_recall_at_k"],
+                "avg_answer_relevance": evaluation["avg_answer_relevance"],
+                "avg_faithfulness": evaluation["avg_faithfulness"],
+            },
         )
 
-    n = len(results)
-    evaluation = {
-        "k": k,
-        "num_test_cases": n,
-        "per_query_results": results,
-        "avg_precision_at_k": sum(r["precision_at_k"] for r in results) / n,
-        "avg_recall_at_k": sum(r["recall_at_k"] for r in results) / n,
-        "avg_answer_relevance": sum(r["answer_relevance"] for r in results) / n,
-        "avg_faithfulness": sum(r["faithfulness"] for r in results) / n,
-    }
-
-    return evaluation
+        return evaluation
 
 
 if __name__ == "__main__":

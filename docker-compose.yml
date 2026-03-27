@@ -227,8 +227,11 @@ services:
       - 0.0.0.0
       - --port
       - "5000"
+      - --allowed-hosts
+      - localhost,localhost:5000,127.0.0.1,127.0.0.1:5000,mlflow,mlflow:5000,backend,sentinel-backend
     environment:
-    - MLFLOW_HTTP_ALLOW_HOST_VARIATION=true
+      - MLFLOW_HTTP_ALLOW_HOST_VARIATION=true
+      - MLFLOW_SERVER_ALLOWED_HOSTS=localhost,localhost:5000,127.0.0.1,127.0.0.1:5000,mlflow,mlflow:5000,backend,sentinel-backend
     ports:
       - "5000:5000"
     volumes:
@@ -249,6 +252,7 @@ services:
       - "9090:9090"
     volumes:
       - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./monitoring/prometheus/rules:/etc/prometheus/rules:ro
       - prometheus_data:/prometheus
     depends_on:
       - backend
