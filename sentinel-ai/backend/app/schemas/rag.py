@@ -8,4 +8,3 @@ class RagAssistantRequest(BaseModel):
 class RagAssistantResponse(BaseModel):
     question: str
     answer: str
-

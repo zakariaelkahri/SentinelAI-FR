@@ -490,7 +490,7 @@ async def stream_camera_mjpeg(
                         capture = None
                         read_failures = 0
                     time.sleep(max(0.02, MJPEG_RECONNECT_DELAY_SECONDS))
-                    continue 
+                    continue
 
                 read_failures = 0
                 encoded_ok, buffer = cv2.imencode(

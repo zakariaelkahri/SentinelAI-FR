@@ -8,7 +8,6 @@ Usage:
     python -m app.seeders.seed
 """
 import asyncio
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import AsyncSessionLocal
 from app.seeders.permission_seeder import PermissionSeeder
