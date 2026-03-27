@@ -251,8 +251,8 @@ services:
     ports:
       - "9090:9090"
     volumes:
-      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - ./monitoring/prometheus/rules:/etc/prometheus/rules:ro
+      - ./sentinel-ai/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./sentinel-ai/prometheus/rules:/etc/prometheus/rules:ro
       - prometheus_data:/prometheus
     depends_on:
       - backend
@@ -271,9 +271,10 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=admin
       - GF_USERS_ALLOW_SIGN_UP=false
     volumes:
-      - grafana_data:/var/lib/grafana
-      - ./monitoring/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
-      - ./monitoring/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - grafana_data_v2:/var/lib/grafana
+      - ./sentinel-ai/grafana/dashboards:/etc/grafana/dashboards:ro
+      - ./sentinel-ai/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./sentinel-ai/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
     depends_on:
       - prometheus
     networks:
@@ -288,7 +289,7 @@ volumes:
   ollama_data:
   mlflow_data:
   prometheus_data:
-  grafana_data:
+  grafana_data_v2:
 
 networks:
   sentinelai-network:

@@ -1,4 +1,4 @@
-name: CI/CD CliniQ
+name: CI/CD sentinel
 
 on:
   push:
@@ -52,7 +52,7 @@ jobs:
       - name: Run unit tests
         run: |
           if [ -d app/tests ]; then
-            pytest app/tests -v
+            python -m pytest app/tests -v
           else
             echo "No app/tests directory found, skipping tests."
           fi
