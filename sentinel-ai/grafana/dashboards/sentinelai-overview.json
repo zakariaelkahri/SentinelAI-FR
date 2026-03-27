@@ -843,8 +843,8 @@
     "style":  "dark",
     "tags":  [
                  "sentinelai",
-                 "rag",
-                 "monitoring"
+                 "monitoring",
+                 "rag"
              ],
     "templating":  {
                        "list":  [
@@ -859,8 +859,8 @@
 
                    },
     "timezone":  "browser",
-    "title":  "SentinelAI RAG Overview",
-    "uid":  "sentinelai-overview",
+    "title":  "SentinelAI Overview",
+    "uid":  "sentinel-overview",
     "version":  10,
     "weekStart":  ""
 }
