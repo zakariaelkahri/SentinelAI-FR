@@ -52,3 +52,8 @@ def test_assistant_ask_runtime_error_maps_to_503(
 
     assert response.status_code == 503
     assert response.json()["detail"] == "RAG unavailable"
+
+
+
+
+

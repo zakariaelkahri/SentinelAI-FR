@@ -27,6 +27,21 @@ function Params() {
         </p>
       </header>
 
+      <section className="summary-strip">
+        <div className="summary-pill">
+          <span className="summary-pill-label">Streaming Params</span>
+          <span className="summary-pill-value">{streamParams.length}</span>
+        </div>
+        <div className="summary-pill">
+          <span className="summary-pill-label">Service Endpoints</span>
+          <span className="summary-pill-value">{serviceEndpoints.length}</span>
+        </div>
+        <div className="summary-pill">
+          <span className="summary-pill-label">Primary API</span>
+          <span className="summary-pill-value">:8000</span>
+        </div>
+      </section>
+
       <div className="dashboard-grid">
         <section className="card">
           <h2>Streaming Params</h2>

@@ -61,6 +61,20 @@ function Login() {
             <span className="auth-pill">Role-Based Access</span>
             <span className="auth-pill">Real-Time Alerts</span>
           </div>
+          <div className="auth-metric-grid" aria-hidden="true">
+            <div className="auth-metric">
+              <span className="auth-metric-value">99.9%</span>
+              <span className="auth-metric-label">Availability</span>
+            </div>
+            <div className="auth-metric">
+              <span className="auth-metric-value">&lt;5s</span>
+              <span className="auth-metric-label">Alert Latency</span>
+            </div>
+            <div className="auth-metric">
+              <span className="auth-metric-value">RBAC</span>
+              <span className="auth-metric-label">Secure Access</span>
+            </div>
+          </div>
         </section>
 
         <section className="auth-card">

@@ -237,6 +237,33 @@ function ManageCameras() {
           {error && <div className="auth-error">{error}</div>}
           {success && <div className="auth-success">{success}</div>}
 
+          <section className="summary-strip">
+            <div className="summary-pill">
+              <span className="summary-pill-label">Total Cameras</span>
+              <span className="summary-pill-value">{cameras.length}</span>
+            </div>
+            <div className="summary-pill">
+              <span className="summary-pill-label">Online</span>
+              <span className="summary-pill-value">
+                {
+                  cameras.filter((camera) =>
+                    ['online', 'active'].includes(String(camera.status || '').toLowerCase())
+                  ).length
+                }
+              </span>
+            </div>
+            <div className="summary-pill">
+              <span className="summary-pill-label">Needs Review</span>
+              <span className="summary-pill-value">
+                {
+                  cameras.filter((camera) =>
+                    ['error', 'maintenance'].includes(String(camera.status || '').toLowerCase())
+                  ).length
+                }
+              </span>
+            </div>
+          </section>
+
           <div className="dashboard-grid admin-grid">
             <section className="card">
               <h2>Create New Camera</h2>

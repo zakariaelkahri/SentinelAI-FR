@@ -1,6 +1,12 @@
 import React, { useState } from 'react';
 import { api } from '../services/api';
 
+const assistantPrompts = [
+  'What should I do if a restricted area alarm triggers after midnight?',
+  'How do I handle a suspicious package report in the lobby?',
+  'Give me a quick escalation checklist for a weapon sighting.',
+];
+
 function SecurityAssistant() {
   const [question, setQuestion] = useState('');
   const [messages, setMessages] = useState([]);
@@ -68,6 +74,20 @@ function SecurityAssistant() {
           >
             Clear
           </button>
+        </div>
+
+        <div className="chip-link-row">
+          {assistantPrompts.map((prompt) => (
+            <button
+              key={prompt}
+              type="button"
+              className="chip-link"
+              onClick={() => setQuestion(prompt)}
+              disabled={isSubmitting}
+            >
+              {prompt}
+            </button>
+          ))}
         </div>
 
         <div className="assistant-chat">

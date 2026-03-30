@@ -11,22 +11,20 @@ services:
       - backend
     networks:
       - sentinelai-network
-    # command: npm start
     restart: unless-stopped
 
   # RTSP Server
   mediamtx:
-    image: bluenviron/mediamtx:latest
+    image: bluenviron/mediamtx:latest 
     container_name: sentinel-mediamtx
     ports:
-      - "8554:8554" # RTSP
-      - "8888:8888" # HLS
-      - "8889:8889" # WebRTC
+      - "8554:8554" 
+      - "8888:8888" 
+      - "8889:8889" 
     networks:
       - sentinelai-network
     restart: unless-stopped
 
-  # Sample RTSP feeder (loops a local video into live.stream)
   rtsp-feeder:
     image: jrottenberg/ffmpeg:6.1-alpine
     container_name: sentinel-rtsp-feeder

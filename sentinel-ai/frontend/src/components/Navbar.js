@@ -43,6 +43,7 @@ function Navbar({ isSidebarOpen, onToggleSidebar }) {
             </Link>
           </h1>
           <p className="sidebar-subtitle">Security Operations</p>
+          {user?.role_name && <span className="sidebar-role-chip">{user.role_name}</span>}
         </div>
         <button
           type="button"

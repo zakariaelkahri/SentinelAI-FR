@@ -264,6 +264,10 @@ async def get_camera_threat_alert(
         .order_by(Alert.timestamp.desc())
         .limit(1)
     )
+    
+
+    
+    
     alert_row = alert_result.first()
 
     if alert_row is None:

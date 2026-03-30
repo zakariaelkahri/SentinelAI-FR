@@ -196,6 +196,25 @@ function UsersManagement() {
           {error && <div className="auth-error">{error}</div>}
           {success && <div className="auth-success">{success}</div>}
 
+          <section className="summary-strip">
+            <div className="summary-pill">
+              <span className="summary-pill-label">Managed Users</span>
+              <span className="summary-pill-value">{users.length}</span>
+            </div>
+            <div className="summary-pill">
+              <span className="summary-pill-label">Active</span>
+              <span className="summary-pill-value">
+                {users.filter((managedUser) => managedUser.status === 'active').length}
+              </span>
+            </div>
+            <div className="summary-pill">
+              <span className="summary-pill-label">Supervisors</span>
+              <span className="summary-pill-value">
+                {users.filter((managedUser) => managedUser.role === 'supervisor').length}
+              </span>
+            </div>
+          </section>
+
           <div className="dashboard-grid admin-grid">
             <section className="card">
               <h2>Create Operator / Supervisor</h2>

@@ -40,6 +40,9 @@ function LiveStreams() {
     [cameras]
   );
 
+  const alertedCameraCount = Object.values(threatAlerts).filter((alert) => alert?.detected).length;
+  const offlineCameraCount = Math.max(cameras.length - activeCameras.length, 0);
+
   useEffect(() => {
     const activeIds = activeCameras.map((camera) => camera.id);
     const activeIdSet = new Set(activeIds);
@@ -175,6 +178,23 @@ function LiveStreams() {
             Showing <strong>{activeCameras.length}</strong> active camera(s) out of{' '}
             <strong>{cameras.length}</strong>.
           </p>
+        )}
+
+        {cameras.length > 0 && (
+          <div className="summary-strip">
+            <div className="summary-pill">
+              <span className="summary-pill-label">Active</span>
+              <span className="summary-pill-value">{activeCameras.length}</span>
+            </div>
+            <div className="summary-pill">
+              <span className="summary-pill-label">Offline</span>
+              <span className="summary-pill-value">{offlineCameraCount}</span>
+            </div>
+            <div className="summary-pill summary-pill-alert">
+              <span className="summary-pill-label">Threat Alerts</span>
+              <span className="summary-pill-value">{alertedCameraCount}</span>
+            </div>
+          </div>
         )}
 
         {cameras.length > 0 && activeCameras.length === 0 && (

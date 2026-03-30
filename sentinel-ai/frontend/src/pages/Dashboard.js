@@ -33,6 +33,13 @@ function Dashboard() {
     { time: '20:00', requests: 180, latency: 44 },
   ];
 
+  const totalRequests = mockMetrics.reduce((sum, point) => sum + point.requests, 0);
+  const averageLatency =
+    mockMetrics.reduce((sum, point) => sum + point.latency, 0) / mockMetrics.length;
+  const peakRequests = Math.max(...mockMetrics.map((point) => point.requests));
+  const healthStatus = String(health?.status || '').toLowerCase();
+  const isHealthy = healthStatus === 'healthy';
+
   return (
     <div className="page-shell">
       <header className="page-header">
@@ -41,7 +48,43 @@ function Dashboard() {
         <p className="page-subtitle">
           Track platform health, model registry, and system activity from one operations view.
         </p>
+        <div className="chip-link-row">
+          <a className="chip-link" href="http://localhost:3000" target="_blank" rel="noopener noreferrer">
+            Grafana
+          </a>
+          <a className="chip-link" href="http://localhost:9090" target="_blank" rel="noopener noreferrer">
+            Prometheus
+          </a>
+          <a className="chip-link" href="http://localhost:5000" target="_blank" rel="noopener noreferrer">
+            MLflow
+          </a>
+        </div>
       </header>
+
+      <section className="kpi-grid">
+        <article className="kpi-card">
+          <p className="kpi-label">Requests (24h)</p>
+          <p className="kpi-value">{totalRequests.toLocaleString()}</p>
+          <p className="kpi-meta">Peak per interval: {peakRequests}</p>
+        </article>
+        <article className="kpi-card">
+          <p className="kpi-label">Average Latency</p>
+          <p className="kpi-value">{averageLatency.toFixed(1)} ms</p>
+          <p className="kpi-meta">Mocked trend data window</p>
+        </article>
+        <article className="kpi-card">
+          <p className="kpi-label">Registered Models</p>
+          <p className="kpi-value">{models.length}</p>
+          <p className="kpi-meta">{models.length > 0 ? 'Model catalog is available' : 'No models yet'}</p>
+        </article>
+        <article className="kpi-card">
+          <p className="kpi-label">API Health</p>
+          <p className="kpi-value">{health?.status || 'Checking...'}</p>
+          <span className={`status-chip ${isHealthy ? 'status-healthy' : 'status-unhealthy'}`}>
+            {isHealthy ? 'Healthy' : 'Needs Attention'}
+          </span>
+        </article>
+      </section>
 
       <div className="dashboard-grid">
         <section className="card metric-card">
